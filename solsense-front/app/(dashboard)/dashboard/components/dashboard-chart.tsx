@@ -21,11 +21,8 @@ const getLastTwelveMonths = () => {
 
 export function DashboardChart({ data }: DashboardChartProps) {
   const lastTwelveMonths = getLastTwelveMonths()
-  
-  const currentMonth = new Date().getMonth()
-  const reorderedData = [...data.slice(currentMonth + 1), ...data.slice(0, currentMonth + 1)].slice(-12)
-  
-  const chartData = reorderedData.map((value, index) => ({
+
+  const chartData = data.map((value, index) => ({
     name: lastTwelveMonths[index],
     value
   }))

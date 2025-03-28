@@ -148,7 +148,8 @@ const calculateMonthlyVolume = (txHistory: any): number[] => {
     }
   });
 
-  return monthlyVolumes;
+  // Return data in reverse order (newest to oldest)
+  return monthlyVolumes.reverse();
 };
 
 const calculateScores = (data: any): ProfileRatings => {
