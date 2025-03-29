@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useWallet } from "@solana/wallet-adapter-react"
 import SolanaTransactionsTable from "./components/tx-table"
 import type { DetailedTx } from "@/types/portfolio"
 
@@ -12,15 +14,20 @@ interface TransactionsResponse {
 }
 
 export default function TransactionsPage() {
+  const router = useRouter()
+  const { connected, publicKey } = useWallet()
   const [transactions, setTransactions] = useState<DetailedTx[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState<number>(1)
   const [totalPages, setTotalPages] = useState<number>(1)
 
-  const address = "AkJk6gxnr9uv64NnWm9tUU8q1jeH6wxjEbEHbT2NeUES"
-
   useEffect(() => {
+    if (!connected || !publicKey) {
+      router.push("/")
+      return
+    }
+
     const fetchTransactions = async () => {
       setLoading(true)
       setError(null)
@@ -30,7 +37,7 @@ export default function TransactionsPage() {
           page: page.toString(),
         })
         const response = await fetch(
-          `http://localhost:4000/api/portfolios/${address}/transactions?${queryParams.toString()}`,
+          `http://localhost:4000/api/portfolios/${publicKey.toString()}/transactions?${queryParams.toString()}`,
         )
 
         if (!response.ok) {
@@ -51,7 +58,11 @@ export default function TransactionsPage() {
     }
 
     fetchTransactions()
-  }, [address, page])
+  }, [connected, publicKey, page, router])
+
+  if (!connected || !publicKey) {
+    return null
+  }
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)

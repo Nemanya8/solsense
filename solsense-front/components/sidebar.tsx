@@ -1,15 +1,28 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { useSidebar } from "./sidebar-provider"
+import { useWallet } from "@solana/wallet-adapter-react"
 import { cn } from "@/lib/utils"
 import { LayoutDashboard, Users, Wallet, HelpCircle, LogOut, Menu, Images } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function Sidebar() {
   const pathname = usePathname()
+  const router = useRouter()
   const { isOpen, toggle } = useSidebar()
+  const { disconnect } = useWallet()
+
+  const handleLogout = async () => {
+    try {
+      await disconnect()
+      router.push("/")
+    } catch (error) {
+      console.error("Error during logout:", error)
+      router.push("/")
+    }
+  }
 
   return (
     <>
@@ -68,17 +81,17 @@ export function Sidebar() {
                 <span>Help</span>
                 <span className="ml-auto text-sm text-muted-foreground">Get support</span>
               </Link>
-              <Link
-                href={"/logout"}
+              <button
+                onClick={handleLogout}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground",
-                  pathname === "/logout" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                  "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground w-full",
+                  "text-muted-foreground"
                 )}
               >
                 <LogOut className="h-6 w-6" />
                 <span>Logout</span>
-                <span className="ml-auto text-sm text-muted-foreground">Exit the app</span>
-              </Link>
+                <span className="ml-auto text-sm text-muted-foreground">Disconnect wallet</span>
+              </button>
             </nav>
           </div>
         </div>
@@ -93,9 +106,3 @@ const navItems = [
   { name: "NFTs", href: "/user/nfts", icon: Images },
   { name: "Community", href: "/user/community", icon: Users, badge: "8" },
 ]
-
-const footerItems = [
-  { name: "Help", href: "/help", icon: HelpCircle, description: "Get support" },
-  { name: "Logout", href: "/logout", icon: LogOut, description: "Exit the app" },
-]
-

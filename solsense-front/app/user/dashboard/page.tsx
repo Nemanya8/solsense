@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useWallet } from "@solana/wallet-adapter-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PortfolioData } from "@/types/portfolio"
@@ -14,17 +16,43 @@ import { LiquidityPositions } from "./components/liquidity-positions"
 import { LendingPositions } from "./components/lending-positions"
 
 export default function DashboardPage() {
+  const router = useRouter()
+  const { connected, publicKey } = useWallet()
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!connected || !publicKey) {
+      router.push("/")
+      return
+    }
+
     const fetchPortfolio = async () => {
       try {
         setLoading(true)
+        const walletAddress = publicKey.toString()
+        console.log('Saving portfolio data...')
+        
+        // First, save the portfolio data
+        const saveResponse = await fetch(
+          `http://localhost:4000/api/portfolios/${walletAddress}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+
+        if (!saveResponse.ok) {
+          throw new Error(`Failed to save portfolio data: ${saveResponse.status}`)
+        }
+
         console.log('Fetching portfolio data...')
+        // Then fetch the saved data
         const response = await fetch(
-          "http://localhost:4000/api/portfolios/AkJk6gxnr9uv64NnWm9tUU8q1jeH6wxjEbEHbT2NeUES",
+          `http://localhost:4000/api/portfolios/${walletAddress}`,
           {
             method: "GET",
             headers: {
@@ -56,7 +84,11 @@ export default function DashboardPage() {
     }
 
     fetchPortfolio()
-  }, [])
+  }, [connected, publicKey, router])
+
+  if (!connected || !publicKey) {
+    return null
+  }
 
   if (loading) {
     console.log('Rendering loading state...')
