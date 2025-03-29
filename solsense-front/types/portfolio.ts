@@ -104,6 +104,155 @@ export interface ProfileRatings {
   experienced: number
 }
 
+export interface DetailedTx {
+  description: string;
+  type: string;
+  source: string;
+  fee: number;
+  feePayer: string;
+  signature: string;
+  slot: number;
+  timestamp: number;
+  nativeTransfers: {
+    fromUserAccount: string;
+    toUserAccount: string;
+    amount: number;
+  }[];
+  tokenTransfers: {
+    fromUserAccount: string;
+    toUserAccount: string;
+    fromTokenAccount: string;
+    toTokenAccount: string;
+    tokenAmount: number;
+    mint: string;
+  }[];
+  accountData: {
+    account: string;
+    nativeBalanceChange: number;
+    tokenBalanceChanges: {
+      userAccount: string;
+      tokenAccount: string;
+      mint: string;
+      rawTokenAmount: {
+        tokenAmount: string;
+        decimals: number;
+      };
+    }[];
+  }[];
+  transactionError?: {
+    error: string;
+  };
+  instructions: {
+    accounts: string[];
+    data: string;
+    programId: string;
+    innerInstructions: {
+      accounts: string[];
+      data: string;
+      programId: string;
+    }[];
+  }[];
+  events?: {
+    nft?: {
+      description: string;
+      type: string;
+      source: string;
+      amount: number;
+      fee: number;
+      feePayer: string;
+      signature: string;
+      slot: number;
+      timestamp: number;
+      saleType?: string;
+      buyer?: string;
+      seller?: string;
+      staker?: string;
+      nfts: {
+        mint: string;
+        tokenStandard: string;
+      }[];
+    };
+    swap?: {
+      nativeInput: {
+        account: string;
+        amount: string;
+      };
+      nativeOutput: {
+        account: string;
+        amount: string;
+      };
+      tokenInputs: {
+        userAccount: string;
+        tokenAccount: string;
+        mint: string;
+        rawTokenAmount: {
+          tokenAmount: string;
+          decimals: number;
+        };
+      }[];
+      tokenOutputs: {
+        userAccount: string;
+        tokenAccount: string;
+        mint: string;
+        rawTokenAmount: {
+          tokenAmount: string;
+          decimals: number;
+        };
+      }[];
+      tokenFees: {
+        userAccount: string;
+        tokenAccount: string;
+        mint: string;
+        rawTokenAmount: {
+          tokenAmount: string;
+          decimals: number;
+        };
+      }[];
+      nativeFees: {
+        account: string;
+        amount: string;
+      }[];
+      innerSwaps: {
+        tokenInputs: {
+          fromUserAccount: string;
+          toUserAccount: string;
+          fromTokenAccount: string;
+          toTokenAccount: string;
+          tokenAmount: number;
+          mint: string;
+        }[];
+        tokenOutputs: {
+          fromUserAccount: string;
+          toUserAccount: string;
+          fromTokenAccount: string;
+          toTokenAccount: string;
+          tokenAmount: number;
+          mint: string;
+        }[];
+        tokenFees: {
+          fromUserAccount: string;
+          toUserAccount: string;
+          fromTokenAccount: string;
+          toTokenAccount: string;
+          tokenAmount: number;
+          mint: string;
+        }[];
+        nativeFees: {
+          fromUserAccount: string;
+          toUserAccount: string;
+          amount: number;
+        }[];
+        programInfo: {
+          source: string;
+          account: string;
+          programName: string;
+          instructionName: string;
+        };
+      }[];
+    };
+  };
+}
+
 export interface PortfolioData {
   id: number
   wallet_address: string
