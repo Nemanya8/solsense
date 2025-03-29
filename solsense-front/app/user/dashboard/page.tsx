@@ -26,7 +26,7 @@ export default function DashboardPage() {
         const response = await fetch(
           "http://localhost:4000/api/portfolios/AkJk6gxnr9uv64NnWm9tUU8q1jeH6wxjEbEHbT2NeUES",
           {
-            method: "POST",
+            method: "GET",
             headers: {
               "Content-Type": "application/json",
             },
@@ -39,6 +39,11 @@ export default function DashboardPage() {
 
         const data = await response.json()
         console.log('Portfolio data received:', data)
+        
+        if (!data || !data.portfolio_data) {
+          console.error('Invalid portfolio data structure:', data)
+          throw new Error('Invalid portfolio data structure received from API')
+        }
         
         setPortfolio(data)
       } catch (err) {
@@ -91,6 +96,19 @@ export default function DashboardPage() {
   }
 
   const { wallet_address, portfolio_data, tx_history, timestamp, transaction_volume, profile_ratings } = portfolio
+  
+  if (!portfolio_data || !portfolio_data.summary) {
+    console.error('Invalid portfolio_data structure:', portfolio_data)
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <p className="text-red-500">Error: Invalid portfolio data structure</p>
+          <Button onClick={() => window.location.reload()} className="mt-4">Reload</Button>
+        </div>
+      </div>
+    )
+  }
+
   const { summary, positions } = portfolio_data
   const { aggregated } = summary
 

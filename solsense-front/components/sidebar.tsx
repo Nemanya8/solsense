@@ -57,36 +57,41 @@ export function Sidebar() {
           </div>
           <div className="border-t p-3">
             <nav className="grid gap-2">
-              {footerItems.map((item, index) => (
-                <div key={index}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground",
-                        pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground",
-                      )}
-                    >
-                      <item.icon className="h-6 w-6" />
-                      <span>{item.name}</span>
-                      {item.description && (
-                        <span className="ml-auto text-sm text-muted-foreground">{item.description}</span>
-                      )}
-                    </Link>
-                  </div>
-              ))}
+              <Link
+                href={"/help"}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground",
+                  pathname === "/help" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                )}
+              >
+                <HelpCircle className="h-6 w-6" />
+                <span>Help</span>
+                <span className="ml-auto text-sm text-muted-foreground">Get support</span>
+              </Link>
+              <Link
+                href={"/logout"}
+                className={cn(
+                  "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground",
+                  pathname === "/logout" ? "bg-accent text-accent-foreground" : "text-muted-foreground"
+                )}
+              >
+                <LogOut className="h-6 w-6" />
+                <span>Logout</span>
+                <span className="ml-auto text-sm text-muted-foreground">Exit the app</span>
+              </Link>
             </nav>
           </div>
         </div>
-      </div>
+      </div> 
     </>
   )
 }
 
 const navItems = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Transactions", href: "/transactions", icon: Wallet },
-  { name: "NFTs", href: "/nfts", icon: Images },
-  { name: "Community", href: "/community", icon: Users, badge: "8" },
+  { name: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard },
+  { name: "Transactions", href: "/user/transactions", icon: Wallet },
+  { name: "NFTs", href: "/user/nfts", icon: Images },
+  { name: "Community", href: "/user/community", icon: Users, badge: "8" },
 ]
 
 const footerItems = [
