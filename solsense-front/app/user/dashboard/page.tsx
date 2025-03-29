@@ -4,14 +4,14 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PortfolioData } from "@/types/portfolio"
-import { PortfolioRadar } from "@/app/(dashboard)/dashboard/components/portfolio-radar"
-import { DashboardChart } from "@/app/(dashboard)/dashboard/components/dashboard-chart"
-import { RecentTransactions } from "@/app/(dashboard)/dashboard/components/recent-transactions"
-import { WalletSummary } from "@/app/(dashboard)/dashboard/components/wallet-summary"
-import { PortfolioValue } from "@/app/(dashboard)/dashboard/components/portfolio-value"
-import { TokenPositions } from "@/app/(dashboard)/dashboard/components/token-positions"
-import { LiquidityPositions } from "@/app/(dashboard)/dashboard/components/liquidity-positions"
-import { LendingPositions } from "@/app/(dashboard)/dashboard/components/lending-positions"
+import { PortfolioRadar } from "./components/portfolio-radar"
+import { DashboardChart } from "./components/dashboard-chart"
+import { RecentTransactions } from "./components/recent-transactions"
+import { WalletSummary } from "./components/wallet-summary"
+import { PortfolioValue } from "./components/portfolio-value"
+import { TokenPositions } from "./components/token-positions"
+import { LiquidityPositions } from "./components/liquidity-positions"
+import { LendingPositions } from "./components/lending-positions"
 
 export default function DashboardPage() {
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
@@ -25,6 +25,12 @@ export default function DashboardPage() {
         console.log('Fetching portfolio data...')
         const response = await fetch(
           "http://localhost:4000/api/portfolios/AkJk6gxnr9uv64NnWm9tUU8q1jeH6wxjEbEHbT2NeUES",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
         )
 
         if (!response.ok) {
