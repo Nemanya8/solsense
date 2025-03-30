@@ -43,14 +43,9 @@ export interface AdvertiserResponse {
 export const createAdvertiserTable = async () => {
   const client = await pool.connect();
   try {
-    // Drop the table if it exists
+    // Create the table only if it doesn't exist
     await client.query(`
-      DROP TABLE IF EXISTS advertisers CASCADE
-    `);
-
-    // Create the table
-    await client.query(`
-      CREATE TABLE advertisers (
+      CREATE TABLE IF NOT EXISTS advertisers (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
@@ -61,14 +56,14 @@ export const createAdvertiserTable = async () => {
       )
     `);
 
-    // Create the index
+    // Create the index if it doesn't exist
     await client.query(`
-      CREATE INDEX idx_advertiser_email ON advertisers(email)
+      CREATE INDEX IF NOT EXISTS idx_advertiser_email ON advertisers(email)
     `);
 
-    console.log('Advertiser table created successfully');
+    console.log('Advertiser table initialized successfully');
   } catch (error) {
-    console.error('Error creating advertiser table:', error);
+    console.error('Error initializing advertiser table:', error);
     throw error;
   } finally {
     client.release();

@@ -13,8 +13,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import axios from "axios"
+import api from '@/lib/axios'
 import { useRouter } from "next/navigation"
+
+interface ProfileRatings {
+  whale: number;
+  hodler: number;
+  flipper: number;
+  defi_user: number;
+  experienced: number;
+}
 
 export function AdvertiserAuthDialog() {
   const [open, setOpen] = useState(false)
@@ -32,18 +40,18 @@ export function AdvertiserAuthDialog() {
     const password = formData.get("password") as string
 
     try {
-      const response = await axios.post("http://localhost:4000/api/advertiser/login", {
+      const response = await api.post("/advertiser/login", {
         email,
         password,
-      }, {
-        withCredentials: true
-      })
+      });
 
       if (response.data) {
+        setOpen(false)
         router.push("/advertiser/dashboard")
       }
     } catch (error: any) {
-      setError(error.response?.data?.error || "Failed to login")
+      console.error('Login error:', error);
+      setError("Invalid email or password")
     } finally {
       setIsLoading(false)
     }
@@ -61,18 +69,28 @@ export function AdvertiserAuthDialog() {
     const description = formData.get("description") as string
 
     try {
-      const response = await axios.post("http://localhost:4000/api/advertiser/register", {
+      const response = await api.post("/advertiser/register", {
         email,
         password,
         name,
         description,
-      })
+      });
 
       if (response.data) {
-        router.push("/advertiser/dashboard")
+        // After successful registration, automatically log in
+        const loginResponse = await api.post("/advertiser/login", {
+          email,
+          password,
+        });
+
+        if (loginResponse.data) {
+          setOpen(false)
+          router.push("/advertiser/dashboard")
+        }
       }
     } catch (error: any) {
-      setError(error.response?.data?.error || "Failed to register")
+      console.error('Registration error:', error);
+      setError("Registration failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -139,4 +157,4 @@ export function AdvertiserAuthDialog() {
       </DialogContent>
     </Dialog>
   )
-} 
+}

@@ -1,4 +1,5 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
   "/advertiser/ads/page": "app/advertiser/ads/page.js",
   "/advertiser/analytics/page": "app/advertiser/analytics/page.js",
   "/advertiser/dashboard/page": "app/advertiser/dashboard/page.js",

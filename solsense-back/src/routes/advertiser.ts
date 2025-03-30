@@ -103,6 +103,17 @@ const loginHandler: RequestHandler = async (req, res) => {
     req.session.advertiserId = advertiser.id;
     req.session.isAuthenticated = true;
 
+    // Save session explicitly
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+
     res.json(advertiser);
   } catch (error) {
     console.error('Login error:', error);

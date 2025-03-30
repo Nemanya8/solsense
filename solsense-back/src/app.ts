@@ -6,8 +6,10 @@ import session from 'express-session';
 import db from './config/db';
 import portfolioRoutes from './routes/portfolio';
 import advertiserRoutes from './routes/advertiser';
+import adRoutes from './routes/ad';
 import { createPortfolioTable } from './models/portfolio';
 import { createAdvertiserTable } from './models/advertiser';
+import { createAdsTable } from './models/ad';
 import { swaggerSpec } from './config/swagger';
 
 dotenv.config();
@@ -15,34 +17,38 @@ dotenv.config();
 const app: Express = express();
 const PORT: number = parseInt(process.env.PORT || '4000', 10);
 
+// CORS configuration - must be before session middleware
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 // Session configuration
 app.use(session({
+  name: 'solsense.sid',
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
+  proxy: true, // Required for secure cookies behind a proxy
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: false, // Set to true in production with HTTPS
     httpOnly: true,
+    sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
 }));
 
-// CORS configuration
-const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:4000', 'http://localhost:8080'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-};
-
-app.use(cors(corsOptions));
 app.use(express.json());
 
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
+// Routes
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/advertiser', advertiserRoutes);
+app.use('/api/ads', adRoutes);
+
+// Swagger documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (_req: Request, res: Response) => {
   res.send('Solsense Backend is running! Visit /api-docs for API documentation.');
@@ -67,6 +73,7 @@ const initializeDatabase = async () => {
   try {
     await createPortfolioTable();
     await createAdvertiserTable();
+    await createAdsTable();
     console.log('Database tables initialized successfully');
   } catch (error) {
     console.error('Error initializing database tables:', error);
@@ -77,6 +84,6 @@ const initializeDatabase = async () => {
 initializeDatabase();
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
   console.log(`API Documentation available at http://localhost:${PORT}/api-docs`);
 });
