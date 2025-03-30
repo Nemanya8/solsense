@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import "@solana/wallet-adapter-react-ui/styles.css"
-import { SidebarProvider } from "@/components/sidebar-provider"
+import { SidebarProvider } from "@/app/user/sidebar-provider"
 import { WalletContextProvider } from "@/components/wallet-provider"
 import { AuthProvider } from "@/lib/auth-context"
 

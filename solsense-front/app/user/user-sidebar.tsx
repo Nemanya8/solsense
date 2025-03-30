@@ -1,26 +1,24 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { useSidebar } from "./sidebar-provider"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, Wallet, HelpCircle, LogOut, Menu, Images } from "lucide-react"
+import { LayoutDashboard, Users, Wallet, HelpCircle, Menu, Images } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { CustomWalletButton } from "@/components/wallet/wallet-button"
 
 export function Sidebar() {
   const pathname = usePathname()
-  const router = useRouter()
   const { isOpen, toggle } = useSidebar()
   const { disconnect } = useWallet()
 
   const handleLogout = async () => {
     try {
       await disconnect()
-      router.push("/")
     } catch (error) {
       console.error("Error during logout:", error)
-      router.push("/")
     }
   }
 
@@ -39,28 +37,31 @@ export function Sidebar() {
           "lg:translate-x-0",
         )}
       >
-        <div className="flex h-16 items-center border-b px-4">
-          <span className="text-xl font-semibold">SolSense</span>
-          <Button variant="ghost" size="icon" className="ml-auto lg:hidden" onClick={toggle}>
-            <Menu className="h-6 w-6" />
-          </Button>
-        </div>
-        <div className="flex flex-col h-[calc(100vh-4rem)]">
-          <div className="flex-1 overflow-auto py-3">
+        <div className="flex h-full flex-col">
+          <div className="flex h-14 items-center border-b px-4">
+            <Button variant="ghost" size="icon" className="lg:hidden" onClick={toggle}>
+              <Menu className="h-6 w-6" />
+            </Button>
+            <Link href="/" className="flex items-center gap-2 font-semibold">
+              <span className="text-xl">SolSense</span>
+            </Link>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-4">
             <nav className="grid gap-2 px-3">
-              {navItems.map((item, index) => (
+              {navItems.map((item) => (
                 <Link
-                  key={index}
+                  key={item.name}
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground",
-                    pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground",
+                    pathname === item.href ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                   )}
                 >
                   <item.icon className="h-6 w-6" />
                   <span>{item.name}</span>
                   {item.badge && (
-                    <span className="ml-auto flex h-6 w-6 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+                    <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
                       {item.badge}
                     </span>
                   )}
@@ -68,6 +69,7 @@ export function Sidebar() {
               ))}
             </nav>
           </div>
+
           <div className="border-t p-3">
             <nav className="grid gap-2">
               <Link
@@ -81,17 +83,7 @@ export function Sidebar() {
                 <span>Help</span>
                 <span className="ml-auto text-sm text-muted-foreground">Get support</span>
               </Link>
-              <button
-                onClick={handleLogout}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-4 py-3 text-base font-medium hover:bg-accent hover:text-accent-foreground w-full",
-                  "text-muted-foreground"
-                )}
-              >
-                <LogOut className="h-6 w-6" />
-                <span>Logout</span>
-                <span className="ml-auto text-sm text-muted-foreground">Disconnect wallet</span>
-              </button>
+              <CustomWalletButton />
             </nav>
           </div>
         </div>
@@ -101,7 +93,7 @@ export function Sidebar() {
 }
 
 const navItems = [
-  { name: "Dashboard", href: "/user/dashboard", icon: LayoutDashboard },
+  { name: "Portfolio", href: "/user/portfolio", icon: LayoutDashboard },
   { name: "Transactions", href: "/user/transactions", icon: Wallet },
   { name: "NFTs", href: "/user/nfts", icon: Images },
   { name: "Community", href: "/user/community", icon: Users, badge: "8" },

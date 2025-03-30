@@ -1,6 +1,6 @@
 import type React from "react"
 import { Sidebar } from "@/components/sidebar-advertiser"
-import { SidebarProvider } from "@/components/sidebar-provider"
+import { SidebarProvider } from "@/app/user/sidebar-provider"
 import { ThemeProvider } from "@/components/theme-provider"
 
 export default function DashboardLayout({

@@ -65,6 +65,7 @@ export default function AnalyticsPage() {
         setError("")
         const response = await api.get('/ads/analytics')
         setData(response.data)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('Error fetching analytics:', error)
         setError(error.response?.data?.error || 
@@ -111,8 +112,7 @@ export default function AnalyticsPage() {
     interactions: Number(stat.interactions)
   }));
 
-  // Format top ads for the chart
-  const formattedTopAds = topAds.map(ad => ({
+  const formattedTopAds = topAds.map((ad: TopAd) => ({
     ...ad,
     name: ad.name || 'Unnamed Ad',
     impressions: Number(ad.impressions),

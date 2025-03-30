@@ -1,7 +1,9 @@
 import type React from "react"
-import { Sidebar } from "@/components/sidebar"
-import { SidebarProvider } from "@/components/sidebar-provider"
 import { ThemeProvider } from "@/components/theme-provider"
+import { SidebarProvider } from "./sidebar-provider"
+import { Sidebar } from "./user-sidebar"
+import { WalletStateProvider } from "./wallet-state-provider"
+import { UserContent } from "./user-content"
 
 export default function DashboardLayout({
   children,
@@ -10,19 +12,21 @@ export default function DashboardLayout({
 }) {
   return (
     <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-      <SidebarProvider>
-        <div className="min-h-screen bg-background">
-          <Sidebar />
-        <div className="lg:pl-72">
-          <main className="p-4 md:p-6 lg:p-8">{children}</main>
+      attribute="class"
+      defaultTheme="dark"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <WalletStateProvider>
+        <SidebarProvider>
+          <div className="min-h-screen bg-background">
+            <Sidebar />
+            <div className="lg:pl-72">
+              <UserContent>{children}</UserContent>
+            </div>
           </div>
-        </div>
-      </SidebarProvider>
+        </SidebarProvider>
+      </WalletStateProvider>
     </ThemeProvider>
   )
 }

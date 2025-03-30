@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useSidebar } from "./sidebar-provider"
+import { useSidebar } from "../app/user/sidebar-provider"
 import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 import { LayoutDashboard, HelpCircle, LogOut, Menu, FileSpreadsheet, ChartLine } from "lucide-react"

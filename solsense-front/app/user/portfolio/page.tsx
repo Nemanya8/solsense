@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!connected || !publicKey) {
-      router.push("/")
+      setLoading(true)
       return
     }
 
