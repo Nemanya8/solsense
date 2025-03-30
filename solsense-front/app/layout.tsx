@@ -5,6 +5,7 @@ import "./globals.css"
 import "@solana/wallet-adapter-react-ui/styles.css"
 import { SidebarProvider } from "@/components/sidebar-provider"
 import { WalletContextProvider } from "@/components/wallet-provider"
+import { AuthProvider } from "@/lib/auth-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <WalletContextProvider>
-          <SidebarProvider>{children}</SidebarProvider>
+          <AuthProvider>
+            <SidebarProvider>{children}</SidebarProvider>
+          </AuthProvider>
         </WalletContextProvider>
       </body>
     </html>

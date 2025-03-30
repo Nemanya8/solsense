@@ -36,7 +36,7 @@ export default function DashboardPage() {
         
         // First, save the portfolio data
         const saveResponse = await fetch(
-          `http://localhost:4000/api/portfolios/${walletAddress}`,
+          `http://localhost:4000/api/portfolio/${walletAddress}`,
           {
             method: "POST",
             headers: {
@@ -52,7 +52,7 @@ export default function DashboardPage() {
         console.log('Fetching portfolio data...')
         // Then fetch the saved data
         const response = await fetch(
-          `http://localhost:4000/api/portfolios/${walletAddress}`,
+          `http://localhost:4000/api/portfolio/${walletAddress}`,
           {
             method: "GET",
             headers: {

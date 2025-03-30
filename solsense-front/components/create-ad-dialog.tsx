@@ -116,24 +116,24 @@ export function CreateAdDialog() {
             <Label>Desired User Profile Ratings</Label>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="whale">Whale Rating</Label>
-                <Input id="whale" name="whale" type="number" min="0" max="1" step="0.1" required />
+                <Label htmlFor="whale">Whale Rating (0-100)</Label>
+                <Input id="whale" name="whale" type="number" min="0" max="100" step="1" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="hodler">Hodler Rating</Label>
-                <Input id="hodler" name="hodler" type="number" min="0" max="1" step="0.1" required />
+                <Label htmlFor="hodler">Hodler Rating (0-100)</Label>
+                <Input id="hodler" name="hodler" type="number" min="0" max="100" step="1" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="flipper">Flipper Rating</Label>
-                <Input id="flipper" name="flipper" type="number" min="0" max="1" step="0.1" required />
+                <Label htmlFor="flipper">Flipper Rating (0-100)</Label>
+                <Input id="flipper" name="flipper" type="number" min="0" max="100" step="1" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="defi_user">DeFi User Rating</Label>
-                <Input id="defi_user" name="defi_user" type="number" min="0" max="1" step="0.1" required />
+                <Label htmlFor="defi_user">DeFi User Rating (0-100)</Label>
+                <Input id="defi_user" name="defi_user" type="number" min="0" max="100" step="1" required />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="experienced">Experienced Rating</Label>
-                <Input id="experienced" name="experienced" type="number" min="0" max="1" step="0.1" required />
+                <Label htmlFor="experienced">Experienced Rating (0-100)</Label>
+                <Input id="experienced" name="experienced" type="number" min="0" max="100" step="1" required />
               </div>
             </div>
           </div>

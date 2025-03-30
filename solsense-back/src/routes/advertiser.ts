@@ -114,7 +114,18 @@ const loginHandler: RequestHandler = async (req, res) => {
       });
     });
 
-    res.json(advertiser);
+    // Set cookie options
+    res.cookie('solsense.sid', req.session.id, {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    });
+
+    res.json({
+      ...advertiser,
+      isAuthenticated: true
+    });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Internal server error' });

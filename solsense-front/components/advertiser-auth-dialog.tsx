@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import api from '@/lib/axios'
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 interface ProfileRatings {
   whale: number;
@@ -29,6 +30,7 @@ export function AdvertiserAuthDialog() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const { setUser } = useAuth()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -46,6 +48,7 @@ export function AdvertiserAuthDialog() {
       });
 
       if (response.data) {
+        setUser(response.data)
         setOpen(false)
         router.push("/advertiser/dashboard")
       }
@@ -84,6 +87,7 @@ export function AdvertiserAuthDialog() {
         });
 
         if (loginResponse.data) {
+          setUser(loginResponse.data)
           setOpen(false)
           router.push("/advertiser/dashboard")
         }

@@ -37,7 +37,7 @@ export default function TransactionsPage() {
           page: page.toString(),
         })
         const response = await fetch(
-          `http://localhost:4000/api/portfolios/${publicKey.toString()}/transactions?${queryParams.toString()}`,
+          `http://localhost:4000/api/portfolio/${publicKey.toString()}/transactions?${queryParams.toString()}`,
         )
 
         if (!response.ok) {

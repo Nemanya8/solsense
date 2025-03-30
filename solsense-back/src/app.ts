@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import express, { Express, Request, Response } from 'express';
+import express, { Express, Request, Response, NextFunction } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import cors from 'cors';
 import session from 'express-session';
@@ -11,6 +11,7 @@ import { createPortfolioTable } from './models/portfolio';
 import { createAdvertiserTable } from './models/advertiser';
 import { createAdsTable } from './models/ad';
 import { swaggerSpec } from './config/swagger';
+import { MemoryStore } from 'express-session';
 
 dotenv.config();
 
@@ -31,13 +32,16 @@ app.use(session({
   secret: process.env.SESSION_SECRET || 'your-secret-key',
   resave: false,
   saveUninitialized: false,
-  proxy: true, // Required for secure cookies behind a proxy
+  proxy: true,
   cookie: {
-    secure: false, // Set to true in production with HTTPS
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    path: '/'
+  },
+  rolling: true,
+  store: new MemoryStore()
 }));
 
 app.use(express.json());
@@ -82,6 +86,15 @@ const initializeDatabase = async () => {
 };
 
 initializeDatabase();
+
+// Add error logging middleware
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error('Error:', err);
+  if (err.stack) {
+    console.error('Stack trace:', err.stack);
+  }
+  res.status(500).json({ error: 'Internal server error' });
+});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

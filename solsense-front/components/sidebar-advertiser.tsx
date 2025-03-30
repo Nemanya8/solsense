@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useSidebar } from "./sidebar-provider"
+import { useAuth } from "@/lib/auth-context"
 import { cn } from "@/lib/utils"
 import { LayoutDashboard, HelpCircle, LogOut, Menu, FileSpreadsheet, ChartLine } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -11,10 +12,11 @@ export function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const { isOpen, toggle } = useSidebar()
+  const { logout } = useAuth()
 
   const handleLogout = async () => {
     try {
-      router.push("/")
+      await logout()
     } catch (error) {
       console.error("Error during logout:", error)
       router.push("/")
