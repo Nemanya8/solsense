@@ -87,13 +87,10 @@ const initializeDatabase = async () => {
 
 initializeDatabase();
 
-// Add error logging middleware
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  console.error('Error:', err);
-  if (err.stack) {
-    console.error('Stack trace:', err.stack);
-  }
-  res.status(500).json({ error: 'Internal server error' });
+// Error handling middleware
+app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
 });
 
 app.listen(PORT, () => {

@@ -1,8 +1,7 @@
-import express, { RequestHandler, Router, Request, Response } from 'express';
+import express, { RequestHandler, Router } from 'express';
 import { createAd, getAdById, getAdsByAdvertiserId, updateAdStats, updateAdRemainingBalance } from '../models/ad';
 import { CreateAdData } from '../models/ad';
-import { getAdvertiserById } from '../models/advertiser';
-import { getPortfolioData, PortfolioData } from '../models/portfolio';
+import { getPortfolioData } from '../models/portfolio';
 import { pool } from '../db';
 
 const router: Router = express.Router();
@@ -127,7 +126,7 @@ const getAdsHandler: RequestHandler = async (req, res) => {
  *       500:
  *         description: Server error
  */
-const getAnalyticsHandler: RequestHandler = async (req, res) => {
+const getAnalyticsHandler: RequestHandler = async (_req, res) => {
   let client;
   try {
     client = await pool.connect();
