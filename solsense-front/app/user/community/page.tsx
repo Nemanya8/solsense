@@ -52,7 +52,6 @@ export default function MatchingAdsPage() {
           credentials: "include",
         })
         viewedAds.current.add(adId)
-        // Update local state
         setAds((prevAds) => prevAds.map((ad) => (ad.id === adId ? { ...ad, impressions: ad.impressions + 1 } : ad)))
       } catch (error) {
         console.error("Error tracking impression:", error)
@@ -68,7 +67,6 @@ export default function MatchingAdsPage() {
         method: "POST",
         credentials: "include",
       })
-      // Update local state
       setAds((prevAds) => prevAds.map((ad) => (ad.id === adId ? { ...ad, interactions: ad.interactions + 1 } : ad)))
     } catch (error) {
       console.error("Error tracking interaction:", error)
@@ -94,7 +92,6 @@ export default function MatchingAdsPage() {
 
         const data = await response.json()
         setAds(data)
-        // Track impressions for all ads
         data.forEach((ad: Ad) => trackImpression(ad.id))
       } catch (error) {
         console.error("Error fetching matching ads:", error)

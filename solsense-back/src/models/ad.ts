@@ -40,6 +40,40 @@ export interface CreateAdData {
   desired_profile: ProfileRatings;
 }
 
+export const createAdImpressionsTable = async () => {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ad_impressions (
+        id SERIAL PRIMARY KEY,
+        ad_id INTEGER NOT NULL REFERENCES ads(id),
+        wallet_address VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ad_id, wallet_address)
+      )
+    `);
+  } finally {
+    client.release();
+  }
+};
+
+export const createAdInteractionsTable = async () => {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ad_interactions (
+        id SERIAL PRIMARY KEY,
+        ad_id INTEGER NOT NULL REFERENCES ads(id),
+        wallet_address VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(ad_id, wallet_address)
+      )
+    `);
+  } finally {
+    client.release();
+  }
+};
+
 export const createAdsTable = async () => {
   const client = await pool.connect();
   try {
@@ -53,16 +87,12 @@ export const createAdsTable = async () => {
         total_balance DECIMAL(20, 8) NOT NULL,
         remaining_balance DECIMAL(20, 8) NOT NULL,
         desired_profile JSONB NOT NULL,
-        impressions INTEGER NOT NULL DEFAULT 0,
-        interactions INTEGER NOT NULL DEFAULT 0,
-        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-      );
+        impressions INTEGER DEFAULT 0,
+        interactions INTEGER DEFAULT 0,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
     `);
-    console.log('Ads table initialized successfully');
-  } catch (error) {
-    console.error('Error initializing ads table:', error);
-    throw error;
   } finally {
     client.release();
   }

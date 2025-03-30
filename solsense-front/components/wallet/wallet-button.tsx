@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { WalletName } from "@solana/wallet-adapter-base"
-import { Check, ChevronDown, Copy, LogOut, WalletIcon, Loader2, X } from "lucide-react"
+import { Check, ChevronDown, Copy, LogOut, WalletIcon, Loader2} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 

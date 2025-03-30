@@ -593,9 +593,11 @@ const trackImpressionHandler: RequestHandler = async (req, res) => {
         );
       }
 
+      // Commit the transaction
       await client.query('COMMIT');
       res.status(200).json({ message: 'Impression tracked successfully' });
     } catch (error) {
+      // Rollback the transaction on error
       await client.query('ROLLBACK');
       throw error;
     } finally {

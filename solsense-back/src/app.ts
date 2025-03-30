@@ -9,7 +9,7 @@ import advertiserRoutes from './routes/advertiser';
 import adRoutes from './routes/ad';
 import { createPortfolioTable } from './models/portfolio';
 import { createAdvertiserTable } from './models/advertiser';
-import { createAdsTable } from './models/ad';
+import { createAdsTable, createAdImpressionsTable, createAdInteractionsTable } from './models/ad';
 import { swaggerSpec } from './config/swagger';
 import { MemoryStore } from 'express-session';
 
@@ -75,9 +75,11 @@ app.get('/tables', async (_req: Request, res: Response) => {
 // Initialize database tables
 const initializeDatabase = async () => {
   try {
-    await createPortfolioTable();
     await createAdvertiserTable();
     await createAdsTable();
+    await createAdImpressionsTable();
+    await createAdInteractionsTable();
+    await createPortfolioTable();
     console.log('Database tables initialized successfully');
   } catch (error) {
     console.error('Error initializing database tables:', error);

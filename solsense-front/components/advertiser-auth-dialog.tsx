@@ -17,14 +17,6 @@ import api from '@/lib/axios'
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 
-interface ProfileRatings {
-  whale: number;
-  hodler: number;
-  flipper: number;
-  defi_user: number;
-  experienced: number;
-}
-
 export function AdvertiserAuthDialog() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
@@ -52,6 +44,7 @@ export function AdvertiserAuthDialog() {
         setOpen(false)
         router.push("/advertiser/dashboard")
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Login error:', error);
       setError("Invalid email or password")
@@ -92,6 +85,7 @@ export function AdvertiserAuthDialog() {
           router.push("/advertiser/dashboard")
         }
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Registration error:', error);
       setError("Registration failed. Please try again.")

@@ -3,7 +3,6 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSidebar } from "./sidebar-provider"
-import { useWallet } from "@solana/wallet-adapter-react"
 import { cn } from "@/lib/utils"
 import { LayoutDashboard, Users, Wallet, HelpCircle, Menu, Images } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -12,15 +11,6 @@ import { CustomWalletButton } from "@/components/wallet/wallet-button"
 export function Sidebar() {
   const pathname = usePathname()
   const { isOpen, toggle } = useSidebar()
-  const { disconnect } = useWallet()
-
-  const handleLogout = async () => {
-    try {
-      await disconnect()
-    } catch (error) {
-      console.error("Error during logout:", error)
-    }
-  }
 
   return (
     <>
@@ -60,11 +50,6 @@ export function Sidebar() {
                 >
                   <item.icon className="h-6 w-6" />
                   <span>{item.name}</span>
-                  {item.badge && (
-                    <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                      {item.badge}
-                    </span>
-                  )}
                 </Link>
               ))}
             </nav>
@@ -81,7 +66,6 @@ export function Sidebar() {
               >
                 <HelpCircle className="h-6 w-6" />
                 <span>Help</span>
-                <span className="ml-auto text-sm text-muted-foreground">Get support</span>
               </Link>
               <CustomWalletButton />
             </nav>
@@ -96,5 +80,5 @@ const navItems = [
   { name: "Portfolio", href: "/user/portfolio", icon: LayoutDashboard },
   { name: "Transactions", href: "/user/transactions", icon: Wallet },
   { name: "NFTs", href: "/user/nfts", icon: Images },
-  { name: "Community", href: "/user/community", icon: Users, badge: "8" },
+  { name: "Community", href: "/user/community", icon: Users},
 ]

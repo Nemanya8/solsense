@@ -123,7 +123,7 @@ export default function AnalyticsPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold">Ad Performance Analytics</h1>
-        <p className="text-muted-foreground">Track your ads' performance and user engagement</p>
+        <p className="text-muted-foreground">Track your ads performance and user engagement</p>
       </div>
 
       {/* Overview Cards */}

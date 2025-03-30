@@ -58,6 +58,7 @@ export default function AdvertiserDashboard() {
         ])
         setAdvertiser(profileResponse.data)
         setAds(adsResponse.data)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         if (error.response?.status === 401) {
           router.push("/")

@@ -24,7 +24,7 @@ export default function Home() {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="text-center space-y-4">
               <p className="text-muted-foreground">
-                Reach your target audience through SolSense's advertising platform.
+                Reach your target audience through SolSense advertising platform.
               </p>
               <Button onClick={() => router.push("/advertiser/dashboard")}>Join as Advertiser</Button>
             </div>
