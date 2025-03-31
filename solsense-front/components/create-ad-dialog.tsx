@@ -17,12 +17,10 @@ import { Plus, ArrowRight, ArrowLeft } from "lucide-react"
 import axios from "axios"
 import { useRouter } from "next/navigation"
 import { useWallet } from "@solana/wallet-adapter-react"
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
 import { PublicKey, Transaction, Connection } from "@solana/web3.js"
 import { 
   getAssociatedTokenAddress, 
   createTransferCheckedInstruction, 
-  getAccount,
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction
@@ -123,6 +121,7 @@ export function CreateAdDialog() {
       try {
         new PublicKey(platformUsdcAccount)
       } catch (e) {
+        console.error(e)
         throw new Error("Invalid platform USDC account address format")
       }
 
@@ -136,7 +135,6 @@ export function CreateAdDialog() {
 
       // Check if the token account exists and get balance
       try {
-        const accountInfo = await getAccount(connection, userTokenAccount)
         const balance = await connection.getTokenAccountBalance(userTokenAccount)
         const userUsdcBalance = Number(balance.value.amount) / Math.pow(10, 6)
         
@@ -144,6 +142,7 @@ export function CreateAdDialog() {
           throw new Error(`Insufficient USDC balance. You have ${userUsdcBalance} USDC but need ${adData.total_balance} USDC`)
         }
       } catch (e) {
+        console.error(e)
         throw new Error("Unable to find USDC in your wallet. Please make sure you have USDC tokens.")
       }
 
@@ -218,6 +217,7 @@ export function CreateAdDialog() {
           setOpen(false)
           router.refresh()
         }
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (rpcError: any) {
         if (rpcError.message?.includes("403")) {
           setError("Failed to connect to Solana network. Please try again later.")
@@ -225,6 +225,7 @@ export function CreateAdDialog() {
           throw rpcError
         }
       }
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       setError(error.message || "Failed to process payment")
     } finally {

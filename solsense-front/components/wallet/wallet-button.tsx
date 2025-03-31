@@ -6,6 +6,7 @@ import { WalletName } from "@solana/wallet-adapter-base"
 import { Check, ChevronDown, Copy, LogOut, WalletIcon, Loader2} from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import Image from "next/image"
 
 const WALLET_ADDRESS_KEY = "solana_wallet_address"
 
@@ -126,10 +127,12 @@ export function CustomWalletButton() {
                 >
                   <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
                     {wallet.adapter.icon ? (
-                      <img
+                      <Image
                         src={wallet.adapter.icon}
                         alt={wallet.adapter.name}
-                        className="h-5 w-5 rounded-full"
+                        width={20}
+                        height={20}
+                        className="rounded-full"
                       />
                     ) : (
                       <WalletIcon className="h-6 w-6" />
@@ -198,10 +201,12 @@ export function CustomWalletButton() {
           <div className="flex items-center gap-3">
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
               {wallet?.adapter.icon ? (
-                <img
+                <Image
                   src={wallet.adapter.icon}
                   alt={wallet.adapter.name}
-                  className="h-5 w-5 rounded-full"
+                  width={20}
+                  height={20}
+                  className="rounded-full"
                 />
               ) : (
                 <WalletIcon className="h-6 w-6" />
@@ -228,10 +233,12 @@ export function CustomWalletButton() {
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10">
                   {wallet.adapter.icon ? (
-                    <img
+                    <Image
                       src={wallet.adapter.icon}
                       alt={wallet.adapter.name}
-                      className="h-5 w-5 rounded-full"
+                      width={20}
+                      height={20}
+                      className="rounded-full"
                     />
                   ) : (
                     <WalletIcon className="h-6 w-6" />

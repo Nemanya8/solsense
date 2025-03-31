@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import ReactMarkdown from "react-markdown"
 import { Eye, Info, BarChart3, User } from "lucide-react"
@@ -8,7 +8,6 @@ import { Eye, Info, BarChart3, User } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Separator } from "@/components/ui/separator"
@@ -44,7 +43,7 @@ export default function MatchingAdsPage() {
   const { publicKey } = useWallet()
   const viewedAds = useRef<Set<number>>(new Set())
 
-  const trackImpression = async (adId: number) => {
+  const trackImpression = useCallback(async (adId: number) => {
     if (!viewedAds.current.has(adId) && publicKey) {
       try {
         await fetch(`http://localhost:4000/api/ads/${adId}/impression?walletAddress=${publicKey.toString()}`, {
@@ -57,7 +56,7 @@ export default function MatchingAdsPage() {
         console.error("Error tracking impression:", error)
       }
     }
-  }
+  }, [publicKey])
 
   const trackInteraction = async (adId: number) => {
     if (!publicKey) return
