@@ -13,9 +13,22 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Plus } from "lucide-react"
+import { Plus, ArrowRight, ArrowLeft } from "lucide-react"
 import axios from "axios"
 import { useRouter } from "next/navigation"
+import { useWallet } from "@solana/wallet-adapter-react"
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui"
+import { PublicKey, Transaction, Connection } from "@solana/web3.js"
+import { 
+  getAssociatedTokenAddress, 
+  createTransferCheckedInstruction, 
+  getAccount,
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction
+} from "@solana/spl-token"
+import { CustomWalletButton } from "./wallet/wallet-button"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface ProfileRatings {
   whale: number;
@@ -30,18 +43,52 @@ export function CreateAdDialog() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
+  const [currentStep, setCurrentStep] = useState("details")
+  const [adData, setAdData] = useState<{
+    name: string;
+    short_description: string;
+    body: string;
+    total_balance: number;
+    desired_profile: ProfileRatings;
+  } | null>(null)
+  const { publicKey, signTransaction } = useWallet()
+  const connection = new Connection(
+    `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY || "613fcffa-dfbc-40b5-bfb6-4c0ad3d400cd"}`,
+    {
+      commitment: "confirmed",
+      confirmTransactionInitialTimeout: 60000
+    }
+  )
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleDetailsSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError("")
-
     const formData = new FormData(e.currentTarget)
     const name = formData.get("name") as string
     const shortDescription = formData.get("shortDescription") as string
     const body = formData.get("body") as string
     const totalBalance = parseFloat(formData.get("totalBalance") as string)
-    
+
+    setAdData({
+      name,
+      short_description: shortDescription,
+      body,
+      total_balance: totalBalance,
+      desired_profile: {
+        whale: 0,
+        hodler: 0,
+        flipper: 0,
+        defi_user: 0,
+        experienced: 0,
+      },
+    })
+    setCurrentStep("audience")
+  }
+
+  const handleAudienceSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!adData) return
+
+    const formData = new FormData(e.currentTarget)
     const desiredProfile: ProfileRatings = {
       whale: parseFloat(formData.get("whale") as string),
       hodler: parseFloat(formData.get("hodler") as string),
@@ -50,28 +97,136 @@ export function CreateAdDialog() {
       experienced: parseFloat(formData.get("experienced") as string),
     }
 
+    setAdData({
+      ...adData,
+      desired_profile: desiredProfile,
+    })
+    setCurrentStep("payment")
+  }
+
+  const handlePayment = async () => {
+    if (!publicKey || !adData || !signTransaction) {
+      setError("Wallet connection required")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
     try {
-      const response = await axios.post(
-        "http://localhost:4000/api/ads",
-        {
-          name,
-          short_description: shortDescription,
-          body,
-          total_balance: totalBalance,
-          desired_profile: desiredProfile,
-        },
-        {
-          withCredentials: true,
-        }
+      // Validate platform USDC account address
+      const platformUsdcAccount = process.env.NEXT_PUBLIC_PLATFORM_USDC_ACCOUNT
+      if (!platformUsdcAccount) {
+        throw new Error("Platform USDC account address not configured")
+      }
+
+      try {
+        new PublicKey(platformUsdcAccount)
+      } catch (e) {
+        throw new Error("Invalid platform USDC account address format")
+      }
+
+      // Get USDC token account
+      const usdcMint = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v") // USDC mint address
+      const userTokenAccount = await getAssociatedTokenAddress(usdcMint, publicKey)
+      const destinationTokenAccount = await getAssociatedTokenAddress(
+        usdcMint,
+        new PublicKey(platformUsdcAccount)
       )
 
-      if (response.data) {
-        setOpen(false)
-        router.refresh()
+      // Check if the token account exists and get balance
+      try {
+        const accountInfo = await getAccount(connection, userTokenAccount)
+        const balance = await connection.getTokenAccountBalance(userTokenAccount)
+        const userUsdcBalance = Number(balance.value.amount) / Math.pow(10, 6)
+        
+        if (userUsdcBalance < adData.total_balance) {
+          throw new Error(`Insufficient USDC balance. You have ${userUsdcBalance} USDC but need ${adData.total_balance} USDC`)
+        }
+      } catch (e) {
+        throw new Error("Unable to find USDC in your wallet. Please make sure you have USDC tokens.")
       }
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
+      // Create payment transaction
+      const paymentAmount = BigInt(Math.floor(adData.total_balance * 1000000)) // Convert to USDC decimals (6)
+      const transaction = new Transaction()
+
+      try {
+        // Get the latest blockhash
+        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash()
+        
+        // Set up transaction
+        transaction.feePayer = publicKey
+        transaction.recentBlockhash = blockhash
+
+        // Check if destination token account exists
+        const destinationAccountInfo = await connection.getAccountInfo(destinationTokenAccount)
+        
+        // If destination account doesn't exist, create it
+        if (!destinationAccountInfo) {
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              publicKey, // payer
+              destinationTokenAccount, // ata
+              new PublicKey(platformUsdcAccount), // owner
+              usdcMint, // mint
+              TOKEN_PROGRAM_ID,
+              ASSOCIATED_TOKEN_PROGRAM_ID
+            )
+          )
+        }
+        
+        // Add the transfer instruction
+        transaction.add(
+          createTransferCheckedInstruction(
+            userTokenAccount, // source
+            usdcMint, // mint (token address)
+            destinationTokenAccount, // destination
+            publicKey, // owner of source account
+            paymentAmount, // amount to transfer (in base units)
+            6, // decimals
+            [], // multisigners
+            TOKEN_PROGRAM_ID // programId
+          )
+        )
+
+        // Sign and send transaction
+        const signedTx = await signTransaction(transaction)
+        const signature = await connection.sendRawTransaction(signedTx.serialize())
+        
+        // Wait for confirmation with specific commitment and timeout
+        const confirmation = await connection.confirmTransaction({
+          signature,
+          blockhash,
+          lastValidBlockHeight
+        })
+
+        if (confirmation.value.err) {
+          throw new Error("Transaction failed to confirm")
+        }
+
+        // Create ad after successful payment
+        const response = await axios.post(
+          "http://localhost:4000/api/ads",
+          adData,
+          {
+            withCredentials: true,
+          }
+        )
+
+        if (response.data) {
+          setOpen(false)
+          router.refresh()
+        }
+      } catch (rpcError: any) {
+        if (rpcError.message?.includes("403")) {
+          setError("Failed to connect to Solana network. Please try again later.")
+        } else {
+          throw rpcError
+        }
+      }
     } catch (error: any) {
-      setError(error.response?.data?.error || "Failed to create ad")
+      setError(error.message || "Failed to process payment")
     } finally {
       setIsLoading(false)
     }
@@ -92,58 +247,114 @@ export function CreateAdDialog() {
             Create a new advertising campaign with your desired target audience.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Ad Name</Label>
-            <Input id="name" name="name" required />
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="shortDescription">Short Description</Label>
-            <Input id="shortDescription" name="shortDescription" required />
-          </div>
+        <Tabs value={currentStep} className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="details">Ad Details</TabsTrigger>
+            <TabsTrigger value="audience">Target Audience</TabsTrigger>
+            <TabsTrigger value="payment">Payment</TabsTrigger>
+          </TabsList>
 
-          <div className="space-y-2">
-            <Label htmlFor="body">Ad Content (Markdown)</Label>
-            <Textarea id="body" name="body" required className="min-h-[200px]" />
-          </div>
+          <TabsContent value="details">
+            <form onSubmit={handleDetailsSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Ad Name</Label>
+                <Input id="name" name="name" required />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="totalBalance">Total Balance (SOL)</Label>
-            <Input id="totalBalance" name="totalBalance" type="number" step="0.01" required />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="shortDescription">Short Description</Label>
+                <Input id="shortDescription" name="shortDescription" required />
+              </div>
 
-          <div className="space-y-4">
-            <Label>Desired User Profile Ratings</Label>
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="whale">Whale Rating (0-100)</Label>
-                <Input id="whale" name="whale" type="number" min="0" max="100" step="1" required />
+                <Label htmlFor="body">Ad Content (Markdown)</Label>
+                <Textarea id="body" name="body" required className="min-h-[200px]" />
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="hodler">Hodler Rating (0-100)</Label>
-                <Input id="hodler" name="hodler" type="number" min="0" max="100" step="1" required />
+                <Label htmlFor="totalBalance">Total Balance (USDC)</Label>
+                <Input id="totalBalance" name="totalBalance" type="number" step="0.01" required />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="flipper">Flipper Rating (0-100)</Label>
-                <Input id="flipper" name="flipper" type="number" min="0" max="100" step="1" required />
+
+              <Button type="submit" className="w-full">
+                Next <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </form>
+          </TabsContent>
+
+          <TabsContent value="audience">
+            <form onSubmit={handleAudienceSubmit} className="space-y-4">
+              <div className="space-y-4">
+                <Label>Desired User Profile Ratings</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="whale">Whale Rating (0-100)</Label>
+                    <Input id="whale" name="whale" type="number" min="0" max="100" step="1" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hodler">Hodler Rating (0-100)</Label>
+                    <Input id="hodler" name="hodler" type="number" min="0" max="100" step="1" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="flipper">Flipper Rating (0-100)</Label>
+                    <Input id="flipper" name="flipper" type="number" min="0" max="100" step="1" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="defi_user">DeFi User Rating (0-100)</Label>
+                    <Input id="defi_user" name="defi_user" type="number" min="0" max="100" step="1" required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="experienced">Experienced Rating (0-100)</Label>
+                    <Input id="experienced" name="experienced" type="number" min="0" max="100" step="1" required />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="defi_user">DeFi User Rating (0-100)</Label>
-                <Input id="defi_user" name="defi_user" type="number" min="0" max="100" step="1" required />
+
+              <div className="flex justify-between">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep("details")}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+                <Button type="submit">
+                  Next <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="experienced">Experienced Rating (0-100)</Label>
-                <Input id="experienced" name="experienced" type="number" min="0" max="100" step="1" required />
+            </form>
+          </TabsContent>
+
+          <TabsContent value="payment">
+            <div className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold mb-2">Confirm Payment</h3>
+                <p className="text-muted-foreground">
+                  Please confirm the payment of {adData?.total_balance} USDC to create your ad.
+                </p>
               </div>
+
+              {!publicKey ? (
+                <div className="flex justify-center">
+                  <CustomWalletButton />
+                </div>
+              ) : (
+                <Button 
+                  onClick={handlePayment} 
+                  className="w-full" 
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Processing Payment..." : "Pay with USDC"}
+                </Button>
+              )}
+
+              <div className="flex justify-between">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep("audience")}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
+                </Button>
+              </div>
+
+              {error && <p className="text-sm text-red-500">{error}</p>}
             </div>
-          </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating..." : "Create Ad"}
-          </Button>
-        </form>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   )

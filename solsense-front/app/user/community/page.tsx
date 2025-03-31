@@ -213,34 +213,9 @@ function AdCard({ ad, onInteraction }: { ad: Ad; onInteraction: () => void }) {
               <DialogTitle>{ad.name}</DialogTitle>
             </DialogHeader>
 
-            <Tabs defaultValue="content" className="mt-4">
-              <TabsList className="grid w-full grid-cols2">
-                <TabsTrigger value="content">Content</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="content" className="mt-4">
-                <div className="prose prose-sm dark:prose-invert max-w-none">
-                  <ReactMarkdown>{ad.body}</ReactMarkdown>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="metrics" className="mt-4">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Budget</h4>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-muted-foreground">Remaining Balance</span>
-                      <span className="font-medium">${ad.remaining_balance.toFixed(2)} USDC</span>
-                    </div>
-                    <Progress value={(ad.remaining_balance / ad.total_balance) * 100} className="h-2" />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {((ad.remaining_balance / ad.total_balance) * 100).toFixed(1)}% of ${ad.total_balance.toFixed(2)}{" "}
-                      USDC total budget
-                    </p>
-                  </div>
-                </div>
-              </TabsContent>
-            </Tabs>
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown>{ad.body}</ReactMarkdown>
+            </div>
 
             <div className="mt-4 flex justify-between items-center">
               <div className="text-sm text-muted-foreground">
