@@ -158,7 +158,6 @@ export const getAdsByAdvertiserId = async (advertiserId: number): Promise<Ad[]> 
       `SELECT * FROM ads WHERE advertiser_id = $1 ORDER BY created_at DESC`,
       [advertiserId]
     );
-    // Parse decimal values to numbers for each ad
     return result.rows.map(ad => ({
       ...ad,
       total_balance: parseFloat(ad.total_balance),

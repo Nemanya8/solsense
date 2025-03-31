@@ -16,6 +16,8 @@ import {
 } from 'recharts'
 import api from "@/lib/axios"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "../auth-provider"
+import { useRouter } from "next/navigation"
 
 interface DailyStats {
   date: string
@@ -54,32 +56,63 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
+  const { advertiser, isLoading: authLoading } = useAuth()
+  const router = useRouter()
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
 
   useEffect(() => {
+    // Redirect to login if not authenticated
+    if (!authLoading && !advertiser) {
+      router.push('/advertiser')
+      return
+    }
+
     const fetchAnalytics = async () => {
+      if (!advertiser) return
+
       try {
         setLoading(true)
         setError("")
-        const response = await api.get('/ads/analytics')
+        const response = await api.get('/ads/analytics', {
+          withCredentials: true
+        })
         setData(response.data)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('Error fetching analytics:', error)
-        setError(error.response?.data?.error || 
-          error.message || 
-          "Failed to load analytics data. Please try again later."
-        )
+        if (error.response?.status === 401) {
+          router.push('/advertiser')
+        } else {
+          setError(error.response?.data?.error || 
+            error.message || 
+            "Failed to load analytics data. Please try again later."
+          )
+        }
       } finally {
         setLoading(false)
       }
     }
 
-    fetchAnalytics()
-  }, [])
+    if (!authLoading && advertiser) {
+      fetchAnalytics()
+    }
+  }, [advertiser, authLoading, router])
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // Show loading state while fetching analytics data
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -93,7 +126,7 @@ export default function AnalyticsPage() {
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-scr  een">
         <div className="text-center max-w-md mx-auto">
           <p className="text-red-500 mb-4">{error || "No data available"}</p>
           <Button onClick={() => window.location.reload()}>Retry</Button>

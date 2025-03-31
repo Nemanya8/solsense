@@ -3,10 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import "@solana/wallet-adapter-react-ui/styles.css"
-import { SidebarProvider } from "@/app/user/sidebar-provider"
-import { WalletContextProvider } from "@/components/wallet-provider"
-import { AuthProvider } from "@/lib/auth-context"
-
+import { ThemeProvider } from "next-themes"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
@@ -22,11 +19,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <WalletContextProvider>
-          <AuthProvider>
-            <SidebarProvider>{children}</SidebarProvider>
-          </AuthProvider>
-        </WalletContextProvider>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="dark"
+        enableSystem
+        disableTransitionOnChange
+      >
+        {children}
+      </ThemeProvider>
       </body>
     </html>
   )

@@ -1,29 +1,28 @@
-import type React from "react"
-import { Sidebar } from "@/components/sidebar-advertiser"
-import { SidebarProvider } from "@/app/user/sidebar-provider"
-import { ThemeProvider } from "@/components/theme-provider"
+"use client"
 
-export default function DashboardLayout({
+import { AuthProvider } from "./auth-provider"
+import { AdvertiserContent } from "./advertiser-content"
+import { AdvertiserSidebarProvider } from "@/components/ui/advertiser-sidebar"
+import { Sidebar } from "./advertiser-sidebar"
+
+export default function AdvertiserLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-            disableTransitionOnChange
-          >
-      <SidebarProvider>
-        <div className="min-h-screen bg-background">
-          <Sidebar />
-        <div className="lg:pl-72">
-          <main className="p-4 md:p-6 lg:p-8">{children}</main>
+    <AuthProvider>
+      <AdvertiserContent>
+        <AdvertiserSidebarProvider>
+          <div className="min-h-screen bg-background">
+            <Sidebar />
+            <div className="lg:pl-72">
+              {children}
+            </div>
           </div>
-        </div>
-      </SidebarProvider>
-    </ThemeProvider>
+        </AdvertiserSidebarProvider>
+      </AdvertiserContent>
+    </AuthProvider>
   )
 }
 

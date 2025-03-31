@@ -12,14 +12,6 @@ interface DailyStat {
   interactions: number;
 }
 
-interface ProfileDistributionRow {
-  avg_whale: number;
-  avg_hodler: number;
-  avg_flipper: number;
-  avg_defi_user: number;
-  avg_experienced: number;
-}
-
 /**
  * @swagger
  * /api/ads:
@@ -126,9 +118,14 @@ const getAdsHandler: RequestHandler = async (req, res) => {
  *       500:
  *         description: Server error
  */
-const getAnalyticsHandler: RequestHandler = async (_req, res) => {
+const getAnalyticsHandler: RequestHandler = async (req, res) => {
   let client;
   try {
+    if (!req.session.advertiserId) {
+      res.status(401).json({ error: 'Not authenticated' });
+      return;
+    }
+
     client = await pool.connect();
     console.log('Connected to database');
 
@@ -145,11 +142,12 @@ const getAnalyticsHandler: RequestHandler = async (_req, res) => {
 
     // Verify advertiser exists
     const advertiser = await client.query(
-      'SELECT id FROM advertisers WHERE id = 1'
+      'SELECT id FROM advertisers WHERE id = $1',
+      [req.session.advertiserId]
     );
 
     if (advertiser.rows.length === 0) {
-      console.log('Advertiser with ID 1 not found, returning empty response');
+      console.log(`Advertiser with ID ${req.session.advertiserId} not found, returning empty response`);
       const emptyResponse = {
         totalStats: {
           total_impressions: 0,
@@ -171,7 +169,7 @@ const getAnalyticsHandler: RequestHandler = async (_req, res) => {
       return;
     }
 
-    console.log('Found advertiser with ID 1');
+    console.log(`Found advertiser with ID ${req.session.advertiserId}`);
 
     // Get total impressions and interactions
     const totalStats = await client.query(`
@@ -181,8 +179,8 @@ const getAnalyticsHandler: RequestHandler = async (_req, res) => {
         COALESCE(SUM(remaining_balance), 0) as total_remaining_balance,
         COALESCE(SUM(total_balance), 0) as total_balance
       FROM ads
-      WHERE advertiser_id = 1
-    `);
+      WHERE advertiser_id = $1
+    `, [req.session.advertiserId]);
     console.log('Total stats query result:', totalStats.rows[0]);
 
     // Initialize empty daily stats
@@ -201,111 +199,85 @@ const getAnalyticsHandler: RequestHandler = async (_req, res) => {
             SELECT 
               DATE(created_at) as date,
               COUNT(*) as impressions
-            FROM ad_impressions ai
-            JOIN ads a ON ai.ad_id = a.id
-            WHERE a.advertiser_id = 1
+            FROM ad_impressions
+            WHERE ad_id IN (SELECT id FROM ads WHERE advertiser_id = $1)
+            AND created_at >= CURRENT_DATE - INTERVAL '30 days'
             GROUP BY DATE(created_at)
           ),
           daily_interactions AS (
             SELECT 
               DATE(created_at) as date,
               COUNT(*) as interactions
-            FROM ad_interactions ai
-            JOIN ads a ON ai.ad_id = a.id
-            WHERE a.advertiser_id = 1
+            FROM ad_interactions
+            WHERE ad_id IN (SELECT id FROM ads WHERE advertiser_id = $1)
+            AND created_at >= CURRENT_DATE - INTERVAL '30 days'
             GROUP BY DATE(created_at)
           )
           SELECT 
             d.date,
             COALESCE(di.impressions, 0) as impressions,
-            COALESCE(dint.interactions, 0) as interactions
+            COALESCE(din.interactions, 0) as interactions
           FROM dates d
           LEFT JOIN daily_impressions di ON d.date = di.date
-          LEFT JOIN daily_interactions dint ON d.date = dint.date
+          LEFT JOIN daily_interactions din ON d.date = din.date
           ORDER BY d.date
-        `);
+        `, [req.session.advertiserId]);
       } catch (error) {
-        console.log('Error fetching daily stats, using empty data:', error);
-        dailyStats = { rows: [] as DailyStat[] };
+        console.error('Error fetching daily stats:', error);
       }
     }
 
     // Get top performing ads
     const topAds = await client.query(`
       SELECT 
-        a.id,
-        a.name,
-        a.impressions,
-        a.interactions,
-        a.remaining_balance,
-        a.total_balance,
+        id,
+        name,
+        impressions,
+        interactions,
+        remaining_balance,
+        total_balance,
         CASE 
-          WHEN a.impressions > 0 THEN (a.interactions::float / a.impressions) * 100
+          WHEN impressions > 0 THEN (interactions::float / impressions) * 100
           ELSE 0
         END as interaction_rate
-      FROM ads a
-      WHERE a.advertiser_id = 1
-      ORDER BY interaction_rate DESC, impressions DESC
+      FROM ads
+      WHERE advertiser_id = $1
+      ORDER BY impressions DESC
       LIMIT 5
-    `);
-    console.log('Top ads query result:', topAds.rows);
+    `, [req.session.advertiserId]);
 
-    // Initialize empty profile distribution
-    let profileDistribution = { rows: [{ 
-      avg_whale: 0, 
-      avg_hodler: 0, 
-      avg_flipper: 0, 
-      avg_defi_user: 0, 
-      avg_experienced: 0 
-    } as ProfileDistributionRow] };
-    if (existingTables.includes('ad_impressions') && existingTables.includes('portfolios')) {
-      try {
-        profileDistribution = await client.query(`
-          WITH user_profiles AS (
-            SELECT DISTINCT p.profile_ratings
-            FROM ad_impressions ai
-            JOIN ads a ON ai.ad_id = a.id
-            JOIN portfolios p ON ai.wallet_address = p.wallet_address
-            WHERE a.advertiser_id = 1
-          )
-          SELECT 
-            COALESCE(AVG((profile_ratings->>'whale')::numeric), 0) as avg_whale,
-            COALESCE(AVG((profile_ratings->>'hodler')::numeric), 0) as avg_hodler,
-            COALESCE(AVG((profile_ratings->>'flipper')::numeric), 0) as avg_flipper,
-            COALESCE(AVG((profile_ratings->>'defi_user')::numeric), 0) as avg_defi_user,
-            COALESCE(AVG((profile_ratings->>'experienced')::numeric), 0) as avg_experienced
-          FROM user_profiles
-        `);
-      } catch (error) {
-        console.log('Error fetching profile distribution, using empty data:', error);
-      }
-    }
-
-    // Parse decimal values to numbers
-    const parsedTotalStats = {
-      total_impressions: parseInt(totalStats.rows[0].total_impressions) || 0,
-      total_interactions: parseInt(totalStats.rows[0].total_interactions) || 0,
-      total_remaining_balance: parseFloat(totalStats.rows[0].total_remaining_balance) || 0,
-      total_balance: parseFloat(totalStats.rows[0].total_balance) || 0
-    };
-
-    const parsedTopAds = topAds.rows.map(ad => ({
-      ...ad,
-      impressions: parseInt(ad.impressions) || 0,
-      interactions: parseInt(ad.interactions) || 0,
-      remaining_balance: parseFloat(ad.remaining_balance) || 0,
-      total_balance: parseFloat(ad.total_balance) || 0,
-      interaction_rate: parseFloat(ad.interaction_rate) || 0
-    }));
+    // Get user profile distribution
+    const profileDistribution = await client.query(`
+      SELECT 
+        COALESCE(AVG((desired_profile->>'whale')::numeric), 0) as avg_whale,
+        COALESCE(AVG((desired_profile->>'hodler')::numeric), 0) as avg_hodler,
+        COALESCE(AVG((desired_profile->>'flipper')::numeric), 0) as avg_flipper,
+        COALESCE(AVG((desired_profile->>'defi_user')::numeric), 0) as avg_defi_user,
+        COALESCE(AVG((desired_profile->>'experienced')::numeric), 0) as avg_experienced
+      FROM ads
+      WHERE advertiser_id = $1
+    `, [req.session.advertiserId]);
 
     const response = {
-      totalStats: parsedTotalStats,
+      totalStats: {
+        total_impressions: parseInt(totalStats.rows[0].total_impressions) || 0,
+        total_interactions: parseInt(totalStats.rows[0].total_interactions) || 0,
+        total_remaining_balance: parseFloat(totalStats.rows[0].total_remaining_balance) || 0,
+        total_balance: parseFloat(totalStats.rows[0].total_balance) || 0
+      },
       dailyStats: dailyStats.rows.map(stat => ({
         date: stat.date,
         impressions: parseInt(stat.impressions.toString()) || 0,
         interactions: parseInt(stat.interactions.toString()) || 0
       })),
-      topAds: parsedTopAds,
+      topAds: topAds.rows.map(ad => ({
+        ...ad,
+        impressions: parseInt(ad.impressions.toString()) || 0,
+        interactions: parseInt(ad.interactions.toString()) || 0,
+        remaining_balance: parseFloat(ad.remaining_balance.toString()) || 0,
+        total_balance: parseFloat(ad.total_balance.toString()) || 0,
+        interaction_rate: parseFloat(ad.interaction_rate.toString()) || 0
+      })),
       profileDistribution: {
         avg_whale: parseFloat(profileDistribution.rows[0].avg_whale.toString()) || 0,
         avg_hodler: parseFloat(profileDistribution.rows[0].avg_hodler.toString()) || 0,
@@ -315,19 +287,10 @@ const getAnalyticsHandler: RequestHandler = async (_req, res) => {
       }
     };
 
-    console.log('Sending response:', response);
     res.json(response);
   } catch (error) {
-    console.error('Detailed error:', error);
-    if (error instanceof Error) {
-      console.error('Error name:', error.name);
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-    res.status(500).json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('Get analytics error:', error);
+    res.status(500).json({ error: 'Internal server error' });
   } finally {
     if (client) {
       client.release();

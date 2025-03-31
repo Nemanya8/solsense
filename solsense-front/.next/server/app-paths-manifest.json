@@ -4,10 +4,10 @@
   "/help/page": "app/help/page.js",
   "/page": "app/page.js",
   "/advertiser/ads/page": "app/advertiser/ads/page.js",
-  "/advertiser/dashboard/page": "app/advertiser/dashboard/page.js",
-  "/user/nfts/page": "app/user/nfts/page.js",
   "/advertiser/analytics/page": "app/advertiser/analytics/page.js",
+  "/advertiser/dashboard/page": "app/advertiser/dashboard/page.js",
+  "/user/community/page": "app/user/community/page.js",
+  "/user/nfts/page": "app/user/nfts/page.js",
   "/user/portfolio/page": "app/user/portfolio/page.js",
-  "/user/transactions/page": "app/user/transactions/page.js",
-  "/user/community/page": "app/user/community/page.js"
+  "/user/transactions/page": "app/user/transactions/page.js"
 }

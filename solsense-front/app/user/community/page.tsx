@@ -102,7 +102,7 @@ export default function MatchingAdsPage() {
     }
 
     fetchMatchingAds()
-  }, [publicKey])
+  }, [publicKey, trackImpression])
 
   if (loading) {
     return <LoadingState />
