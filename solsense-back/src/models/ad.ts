@@ -67,8 +67,15 @@ export const createAdInteractionsTable = async () => {
         wallet_address VARCHAR(255) NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(ad_id, wallet_address)
-      )
+      );
+      
+      CREATE INDEX IF NOT EXISTS idx_ad_interactions_ad_id ON ad_interactions(ad_id);
+      CREATE INDEX IF NOT EXISTS idx_ad_interactions_wallet ON ad_interactions(wallet_address);
     `);
+    console.log('Ad interactions table created successfully');
+  } catch (error) {
+    console.error('Error creating ad interactions table:', error);
+    throw error;
   } finally {
     client.release();
   }

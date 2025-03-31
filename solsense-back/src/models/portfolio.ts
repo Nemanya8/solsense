@@ -285,3 +285,26 @@ export const getPortfolioData = async (walletAddress: string): Promise<Portfolio
     client.release();
   }
 };
+
+export const updateEarnedRewards = async (walletAddress: string, amount: number): Promise<void> => {
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `UPDATE portfolios 
+       SET earned_rewards = earned_rewards + $1
+       WHERE wallet_address = $2
+       AND id = (
+         SELECT id FROM portfolios 
+         WHERE wallet_address = $2 
+         ORDER BY timestamp DESC 
+         LIMIT 1
+       )`,
+      [amount, walletAddress]
+    );
+  } catch (error) {
+    console.error('Error updating earned rewards:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};

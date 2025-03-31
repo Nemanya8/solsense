@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { PortfolioData } from "@/types/portfolio"
 
 interface ProfileRatings {
   whale: number
@@ -38,6 +39,7 @@ interface Ad {
 
 export default function MatchingAdsPage() {
   const [ads, setAds] = useState<Ad[]>([])
+  const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const { publicKey } = useWallet()
@@ -46,6 +48,23 @@ export default function MatchingAdsPage() {
   const trackImpression = useCallback(async (adId: number) => {
     if (!viewedAds.current.has(adId) && publicKey) {
       try {
+        const response = await fetch(
+          `http://localhost:4000/api/portfolio/${publicKey.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status} - ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        setPortfolio(data)
+
         await fetch(`http://localhost:4000/api/ads/${adId}/impression?walletAddress=${publicKey.toString()}`, {
           method: "POST",
           credentials: "include",
@@ -62,11 +81,23 @@ export default function MatchingAdsPage() {
     if (!publicKey) return
 
     try {
-      await fetch(`http://localhost:4000/api/ads/${adId}/interaction?walletAddress=${publicKey.toString()}`, {
+      const response = await fetch(`http://localhost:4000/api/ads/${adId}/interaction?walletAddress=${publicKey.toString()}`, {
         method: "POST",
         credentials: "include",
       })
+
+      if (!response.ok) {
+        throw new Error("Failed to track interaction")
+      }
+
       setAds((prevAds) => prevAds.map((ad) => (ad.id === adId ? { ...ad, interactions: ad.interactions + 1 } : ad)))
+      
+      if (portfolio) {
+        setPortfolio(prev => prev ? {
+          ...prev,
+          earned_rewards: (prev.earned_rewards || 0) + 0.5
+        } : null)
+      }
     } catch (error) {
       console.error("Error tracking interaction:", error)
     }
@@ -128,8 +159,25 @@ export default function MatchingAdsPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Matching Ads</h1>
-        <p className="text-muted-foreground mt-1">Personalized content based on your on-chain profile</p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Matching Ads</h1>
+            <p className="text-muted-foreground mt-1">Personalized content based on your on-chain profile</p>
+          </div>
+          {portfolio && (
+            <Card>
+              <CardContent className="justify-end text-right">
+                <div className="text-sm text-muted-foreground">Total Earned</div>
+                <div className="text-2xl font-bold">
+                  {portfolio?.earned_rewards?.toFixed(2) || 0} USDC
+                </div>
+                <Button className="mt-2 w-full">
+                  Redeem
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
 
       {ads.length > 0 ? (

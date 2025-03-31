@@ -114,7 +114,14 @@
       "static/chunks/758-3886125e9833df08.js",
       "static/chunks/848-d251946ae10f29b7.js",
       "static/chunks/256-6c488019b4b8cb49.js",
-      "static/chunks/app/user/community/page-ebc2478815884136.js"
+      "static/chunks/app/user/community/page-4c4bb4f3549ebb47.js"
+    ],
+    "/user/nfts/page": [
+      "static/chunks/webpack-28f1616a5d2d94bd.js",
+      "static/chunks/4bd1b696-53f7bf60afdef632.js",
+      "static/chunks/684-4e0235ebeabf2771.js",
+      "static/chunks/main-app-8626a914e339206c.js",
+      "static/chunks/app/user/nfts/page-f3baab28d41d18cb.js"
     ],
     "/user/portfolio/page": [
       "static/chunks/webpack-28f1616a5d2d94bd.js",
@@ -126,13 +133,6 @@
       "static/chunks/716-9f8cf579d1b307e3.js",
       "static/chunks/135-687212f6af99e109.js",
       "static/chunks/app/user/portfolio/page-3cb0eb1fb531a298.js"
-    ],
-    "/user/nfts/page": [
-      "static/chunks/webpack-28f1616a5d2d94bd.js",
-      "static/chunks/4bd1b696-53f7bf60afdef632.js",
-      "static/chunks/684-4e0235ebeabf2771.js",
-      "static/chunks/main-app-8626a914e339206c.js",
-      "static/chunks/app/user/nfts/page-f3baab28d41d18cb.js"
     ],
     "/user/transactions/page": [
       "static/chunks/webpack-28f1616a5d2d94bd.js",
