@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -16,23 +16,11 @@ import { LendingPositions } from "./components/lending-positions"
 export default function DashboardPage() {
   const { connected, publicKey } = useWallet()
   const [portfolio, setPortfolio] = useState<PortfolioData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!connected || !publicKey) {
-      setLoading(true)
-      return
-    }
-
-    fetchPortfolio()
-  }, [connected, publicKey])
-
-  const fetchPortfolio = async () => {
+  const fetchPortfolio = useCallback(async () => {
     if (!connected || !publicKey) return
 
     try {
-      setLoading(true)
       const walletAddress = publicKey.toString()
       console.log("Fetching portfolio data...")
       const response = await fetch(`http://localhost:4000/api/portfolio/${walletAddress}`, {
@@ -57,12 +45,17 @@ export default function DashboardPage() {
       setPortfolio(data)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch portfolio data"
-      console.error("Error details:", err)
-      setError(errorMessage)
-    } finally {
-      setLoading(false)
+      throw new Error(errorMessage)
     }
-  }
+  }, [connected, publicKey])
+
+  useEffect(() => {
+    if (!connected || !publicKey) {
+      return
+    }
+
+    fetchPortfolio()
+  }, [connected, publicKey, fetchPortfolio])
 
   const updatePortfolio = async () => {
     if (!connected || !publicKey) return
@@ -82,12 +75,10 @@ export default function DashboardPage() {
         throw new Error(`Failed to update portfolio data: ${saveResponse.status}`)
       }
 
-      // Fetch the updated data
       await fetchPortfolio()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to update portfolio data"
-      console.error("Error details:", err)
-      setError(errorMessage)
+      throw new Error(errorMessage)
     }
   }
 
@@ -95,35 +86,7 @@ export default function DashboardPage() {
     return null
   }
 
-  if (loading) {
-    console.log("Rendering loading state...")
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading portfolio data...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    console.log("Rendering error state:", error)
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center max-w-md mx-auto">
-          <p className="text-red-500 mb-4">Error loading dashboard: {error}</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            Please check that the API server is running at http://localhost:4000
-          </p>
-          <Button onClick={() => window.location.reload()}>Retry</Button>
-        </div>
-      </div>
-    )
-  }
-
   if (!portfolio) {
-    console.log("No portfolio data available")
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -139,17 +102,9 @@ export default function DashboardPage() {
   const { wallet_address, portfolio_data, tx_history, timestamp, transaction_volume, profile_ratings } = portfolio
 
   if (!portfolio_data || !portfolio_data.summary) {
-    console.error("Invalid portfolio_data structure:", portfolio_data)
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-red-500">Error: Invalid portfolio data structure</p>
-          <Button onClick={() => window.location.reload()} className="mt-4">
-            Reload
-          </Button>
-        </div>
-      </div>
-    )
+    const errorMsg = "Invalid portfolio data structure"
+    console.error(errorMsg, portfolio_data)
+    throw new Error(errorMsg)
   }
 
   const { summary, positions } = portfolio_data
