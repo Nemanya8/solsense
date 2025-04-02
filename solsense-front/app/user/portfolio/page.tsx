@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import type { PortfolioData } from "@/types/portfolio"
 import { PortfolioRadar } from "./components/portfolio-radar"
 import { DashboardChart } from "./components/dashboard-chart"
@@ -23,9 +22,7 @@ export default function DashboardPage() {
 
     try {
       const walletAddress = publicKey.toString()
-      console.log("Fetching portfolio data...")
       const data = await portfolioService.fetchPortfolio(walletAddress)
-      console.log("Portfolio data received:", data)
       setPortfolio(data)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch portfolio data"
@@ -46,7 +43,6 @@ export default function DashboardPage() {
 
     try {
       const walletAddress = publicKey.toString()
-      console.log("Updating portfolio data...")
       await portfolioService.updatePortfolio(walletAddress)
       await fetchPortfolio()
     } catch (err) {
@@ -60,13 +56,11 @@ export default function DashboardPage() {
   }
 
   if (!portfolio) {
+    updatePortfolio()
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <p className="text-muted-foreground">No portfolio data available</p>
-          <Button onClick={() => window.location.reload()} className="mt-4">
-            Reload
-          </Button>
+          <p className="text-muted-foreground">Updating portfolio data...</p>
         </div>
       </div>
     )

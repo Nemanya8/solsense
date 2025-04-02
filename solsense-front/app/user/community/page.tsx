@@ -3,15 +3,13 @@
 import { useEffect, useState, useRef, useCallback } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import ReactMarkdown from "react-markdown"
-import { Eye, Info, BarChart3, User } from "lucide-react"
+import { Eye, Info, User } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Separator } from "@/components/ui/separator"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PortfolioData } from "@/types/portfolio"
 import { communityService, type Ad } from "@/app/services/community"
@@ -155,23 +153,6 @@ function AdCard({ ad, onInteraction }: { ad: Ad; onInteraction: () => void }) {
             <CardTitle>{ad.name}</CardTitle>
             <CardDescription className="mt-1">{ad.short_description}</CardDescription>
           </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="text-right">
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <BarChart3 className="h-3 w-3" />
-                    <span>{ad.impressions} views</span>
-                  </Badge>
-                </div>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Impressions: {ad.impressions}</p>
-                <p>Interactions: {ad.interactions}</p>
-                <p>Rate: {ad.impressions > 0 ? ((ad.interactions / ad.impressions) * 100).toFixed(1) : 0}%</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center text-sm text-muted-foreground">
