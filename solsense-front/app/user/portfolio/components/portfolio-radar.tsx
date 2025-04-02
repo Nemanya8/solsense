@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card"
-import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Tooltip } from "recharts"
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from "recharts"
 
 interface PortfolioRadarProps {
   data: {
@@ -58,6 +58,14 @@ export function PortfolioRadar({ data }: PortfolioRadarProps) {
                 axisLine={false}
                 tickLine={false}
               />
+              <PolarRadiusAxis 
+                angle={30} 
+                domain={[0, 100]} 
+                tick={false} 
+                axisLine={false} 
+                tickLine={false} 
+              />
+
               <Radar
                 name="Score"
                 dataKey="score"
@@ -80,4 +88,3 @@ export function PortfolioRadar({ data }: PortfolioRadarProps) {
     </Card>
   )
 }
-

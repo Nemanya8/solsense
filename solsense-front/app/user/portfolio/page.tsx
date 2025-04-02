@@ -12,6 +12,7 @@ import { PortfolioSummary } from "./components/wallet-summary"
 import { TokenPositions } from "./components/token-positions"
 import { LiquidityPositions } from "./components/liquidity-positions"
 import { LendingPositions } from "./components/lending-positions"
+import { portfolioService } from "@/app/services/portfolio"
 
 export default function DashboardPage() {
   const { connected, publicKey } = useWallet()
@@ -23,25 +24,8 @@ export default function DashboardPage() {
     try {
       const walletAddress = publicKey.toString()
       console.log("Fetching portfolio data...")
-      const response = await fetch(`http://localhost:4000/api/portfolio/${walletAddress}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status} - ${response.statusText}`)
-      }
-
-      const data = await response.json()
+      const data = await portfolioService.fetchPortfolio(walletAddress)
       console.log("Portfolio data received:", data)
-
-      if (!data || !data.portfolio_data) {
-        console.error("Invalid portfolio data structure:", data)
-        throw new Error("Invalid portfolio data structure received from API")
-      }
-
       setPortfolio(data)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to fetch portfolio data"
@@ -63,18 +47,7 @@ export default function DashboardPage() {
     try {
       const walletAddress = publicKey.toString()
       console.log("Updating portfolio data...")
-
-      const saveResponse = await fetch(`http://localhost:4000/api/portfolio/${walletAddress}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
-
-      if (!saveResponse.ok) {
-        throw new Error(`Failed to update portfolio data: ${saveResponse.status}`)
-      }
-
+      await portfolioService.updatePortfolio(walletAddress)
       await fetchPortfolio()
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to update portfolio data"

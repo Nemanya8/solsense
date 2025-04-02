@@ -42,7 +42,7 @@ export function LiquidityPositions({ clmm, amm }: LiquidityPositionsProps) {
             <div>
               <h3 className="text-sm font-medium mb-3">Concentrated Positions</h3>
               <div className="space-y-4">
-                {clmm.map((position, index) => (
+                {[...clmm].sort((a, b) => (b.valueInUSD || 0) - (a.valueInUSD || 0)).map((position, index) => (
                   <TooltipProvider key={index}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -204,7 +204,7 @@ export function LiquidityPositions({ clmm, amm }: LiquidityPositionsProps) {
             <div>
               <h3 className="text-sm font-medium mb-3">AMM Positions</h3>
               <div className="space-y-4">
-                {amm.map((position, index) => (
+                {[...amm].sort((a, b) => (b.valueInUSD || 0) - (a.valueInUSD || 0)).map((position, index) => (
                   <TooltipProvider key={index}>
                     <Tooltip>
                       <TooltipTrigger asChild>

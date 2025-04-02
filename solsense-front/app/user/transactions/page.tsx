@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation"
 import { useWallet } from "@solana/wallet-adapter-react"
 import SolanaTransactionsTable from "./components/tx-table"
 import type { DetailedTx } from "@/types/portfolio"
-
-interface TransactionsResponse {
-  transactions: DetailedTx[]
-  total: number
-  page: number
-  totalPages: number
-}
+import { transactionsService } from "@/app/services/transactions"
 
 export default function TransactionsPage() {
   const router = useRouter()
@@ -33,19 +27,7 @@ export default function TransactionsPage() {
       setError(null)
 
       try {
-        const queryParams = new URLSearchParams({
-          page: page.toString(),
-        })
-        const response = await fetch(
-          `http://localhost:4000/api/portfolio/${publicKey.toString()}/transactions?${queryParams.toString()}`,
-        )
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`)
-        }
-
-        const data: TransactionsResponse = await response.json()
-
+        const data = await transactionsService.fetchTransactions(publicKey.toString(), page)
         setTransactions(data.transactions)
         setTotalPages(data.totalPages)
       } catch (err) {

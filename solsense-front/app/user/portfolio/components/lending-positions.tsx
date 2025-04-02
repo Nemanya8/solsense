@@ -42,7 +42,7 @@ export function LendingPositions({ tokenPosition, leverageFarmPosition }: Lendin
             <div>
               <h3 className="text-sm font-medium mb-3">Token Lending</h3>
               <div className="space-y-4">
-                {tokenPosition.map((position, index) => (
+                {[...tokenPosition].sort((a, b) => (b.valueInUSD || 0) - (a.valueInUSD || 0)).map((position, index) => (
                   <TooltipProvider key={index}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -145,7 +145,7 @@ export function LendingPositions({ tokenPosition, leverageFarmPosition }: Lendin
             <div>
               <h3 className="text-sm font-medium mb-3">Leverage Farming</h3>
               <div className="space-y-4">
-                {leverageFarmPosition.map((position, index) => (
+                {[...leverageFarmPosition].sort((a, b) => (b.valueInUSD || 0) - (a.valueInUSD || 0)).map((position, index) => (
                   <TooltipProvider key={index}>
                     <Tooltip>
                       <TooltipTrigger asChild>

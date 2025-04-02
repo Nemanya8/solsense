@@ -14,28 +14,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PortfolioData } from "@/types/portfolio"
-
-interface ProfileRatings {
-  whale: number
-  hodler: number
-  flipper: number
-  defi_user: number
-  experienced: number
-}
-
-interface Ad {
-  id: number
-  name: string
-  short_description: string
-  body: string
-  total_balance: number
-  remaining_balance: number
-  desired_profile: ProfileRatings
-  impressions: number
-  interactions: number
-  advertiser_name: string
-  created_at: string
-}
+import { communityService, type Ad } from "@/app/services/community"
 
 export default function MatchingAdsPage() {
   const [ads, setAds] = useState<Ad[]>([])
@@ -48,27 +27,10 @@ export default function MatchingAdsPage() {
   const trackImpression = useCallback(async (adId: number) => {
     if (!viewedAds.current.has(adId) && publicKey) {
       try {
-        const response = await fetch(
-          `http://localhost:4000/api/portfolio/${publicKey.toString()}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        )
-
-        if (!response.ok) {
-          throw new Error(`API error: ${response.status} - ${response.statusText}`)
-        }
-
-        const data = await response.json()
+        const data = await communityService.fetchPortfolio(publicKey.toString())
         setPortfolio(data)
 
-        await fetch(`http://localhost:4000/api/ads/${adId}/impression?walletAddress=${publicKey.toString()}`, {
-          method: "POST",
-          credentials: "include",
-        })
+        await communityService.trackImpression(adId, publicKey.toString())
         viewedAds.current.add(adId)
         setAds((prevAds) => prevAds.map((ad) => (ad.id === adId ? { ...ad, impressions: ad.impressions + 1 } : ad)))
       } catch (error) {
@@ -81,15 +43,7 @@ export default function MatchingAdsPage() {
     if (!publicKey) return
 
     try {
-      const response = await fetch(`http://localhost:4000/api/ads/${adId}/interaction?walletAddress=${publicKey.toString()}`, {
-        method: "POST",
-        credentials: "include",
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to track interaction")
-      }
-
+      await communityService.trackInteraction(adId, publicKey.toString())
       setAds((prevAds) => prevAds.map((ad) => (ad.id === adId ? { ...ad, interactions: ad.interactions + 1 } : ad)))
       
       if (portfolio) {
@@ -112,15 +66,7 @@ export default function MatchingAdsPage() {
       }
 
       try {
-        const response = await fetch(`http://localhost:4000/api/ads/matching?walletAddress=${publicKey.toString()}`, {
-          credentials: "include",
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch matching ads")
-        }
-
-        const data = await response.json()
+        const data = await communityService.fetchMatchingAds(publicKey.toString())
         setAds(data)
         data.forEach((ad: Ad) => trackImpression(ad.id))
       } catch (error) {

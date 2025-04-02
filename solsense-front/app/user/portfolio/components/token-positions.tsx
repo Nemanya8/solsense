@@ -41,7 +41,11 @@ export function TokenPositions({ spot, yield: yieldPositions }: TokenPositionsPr
           <div>
             <h3 className="text-sm font-medium mb-3">Spot Tokens</h3>
             <div className="space-y-4">
-              {spot.map((token, index) => (
+              {[...spot].sort((a, b) => {
+                const valueA = a.priceInUSD ? a.priceInUSD * a.balance : 0;
+                const valueB = b.priceInUSD ? b.priceInUSD * b.balance : 0;
+                return valueB - valueA;
+              }).map((token, index) => (
                 <TooltipProvider key={index}>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -133,7 +137,11 @@ export function TokenPositions({ spot, yield: yieldPositions }: TokenPositionsPr
             <div>
               <h3 className="text-sm font-medium mb-3">Yield Tokens</h3>
               <div className="space-y-4">
-                {yieldPositions.map((token, index) => (
+                {[...yieldPositions].sort((a, b) => {
+                  const valueA = a.priceInUSD ? a.priceInUSD * a.balance : 0;
+                  const valueB = b.priceInUSD ? b.priceInUSD * b.balance : 0;
+                  return valueB - valueA;
+                }).map((token, index) => (
                   <TooltipProvider key={index}>
                     <Tooltip>
                       <TooltipTrigger asChild>
