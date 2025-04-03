@@ -257,6 +257,7 @@ export interface PortfolioData {
   id: number
   wallet_address: string
   timestamp: string
+  earned_rewards: number
   portfolio_data: {
     status: string
     wallet: string

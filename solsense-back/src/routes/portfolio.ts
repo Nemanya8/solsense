@@ -475,7 +475,7 @@ interface HeliusTransaction {
 
 /**
  * @swagger
- * /api/portfolios/{address}:
+ * /api/portfolio/{address}:
  *   get:
  *     summary: Get latest portfolio information for a specific wallet address
  *     description: Retrieves the most recent portfolio data for a given Solana wallet address
@@ -514,7 +514,7 @@ interface HeliusTransaction {
  *                 error:
  *                   type: string
  */
-router.get('/portfolios/:address', async (req: Request, res: Response): Promise<void> => {
+router.get('/:address', async (req: Request, res: Response): Promise<void> => {
   try {
     const { address } = req.params;
     const portfolioHistory = await getPortfolioData(address);
@@ -533,7 +533,7 @@ router.get('/portfolios/:address', async (req: Request, res: Response): Promise<
 
 /**
  * @swagger
- * /api/portfolios/{address}:
+ * /api/portfolio/{address}:
  *   post:
  *     summary: Update portfolio data for a specific wallet address
  *     description: Fetches and saves the latest portfolio data and transaction history for a given Solana wallet address
@@ -568,7 +568,7 @@ router.get('/portfolios/:address', async (req: Request, res: Response): Promise<
  *                 error:
  *                   type: string
  */
-router.post('/portfolios/:address', async (req: Request, res: Response): Promise<void> => {
+router.post('/:address', async (req: Request, res: Response): Promise<void> => {
   try {
     const { address } = req.params;
     const modules = 'token,lending,farm,liquidity';
@@ -612,7 +612,7 @@ router.post('/portfolios/:address', async (req: Request, res: Response): Promise
 
 /**
  * @swagger
- * /portfolios/{address}/transactions:
+ * /api/portfolio/{address}/transactions:
  *   get:
  *     summary: Get paginated transactions for a wallet
  *     parameters:
@@ -669,7 +669,7 @@ router.post('/portfolios/:address', async (req: Request, res: Response): Promise
  *       500:
  *         description: Server error
  */
-router.get('/portfolios/:address/transactions', async (req: Request, res: Response): Promise<void> => {
+router.get('/:address/transactions', async (req: Request, res: Response): Promise<void> => {
   try {
     const { address } = req.params;
     const page = parseInt(req.query.page as string) || 1;
