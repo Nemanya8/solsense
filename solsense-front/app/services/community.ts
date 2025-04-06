@@ -7,6 +7,7 @@ export interface Ad {
   name: string
   short_description: string
   body: string
+  content_type: string
   total_balance: number
   remaining_balance: number
   desired_profile: {
@@ -55,7 +56,7 @@ export const communityService = {
     }
   },
 
-  async trackInteraction(adId: number, walletAddress: string): Promise<void> {
+  async trackInteraction(adId: number, walletAddress: string, amount?: number): Promise<{success: boolean, amount?: number, alreadyInteracted?: boolean}> {
     const response = await fetch(
       `${API_BASE_URL}/api/ads/${adId}/interaction?walletAddress=${walletAddress}`,
       {
@@ -64,12 +65,15 @@ export const communityService = {
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ amount }),
       }
     )
 
     if (!response.ok) {
       throw new Error("Failed to track interaction")
     }
+
+    return response.json()
   },
 
   async fetchPortfolio(walletAddress: string): Promise<PortfolioData> {

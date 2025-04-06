@@ -10,6 +10,7 @@ import { createPortfolioTable } from './models/portfolio';
 import { createAdvertiserTable } from './models/advertiser';
 import { createAdsTable, createAdImpressionsTable, createAdInteractionsTable } from './models/ad';
 import { swaggerSpec } from './config/swagger';
+import { runMigrations } from './db-migration';
 
 dotenv.config();
 
@@ -61,6 +62,9 @@ const initializeDatabase = async () => {
     await createAdInteractionsTable();
     await createPortfolioTable();
     console.log('Database tables initialized successfully');
+    
+    // Run migrations after tables are created
+    await runMigrations();
   } catch (error) {
     console.error('Error initializing database tables:', error);
     process.exit(1);

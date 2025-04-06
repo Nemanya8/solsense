@@ -17,6 +17,8 @@ const trackInteractionHandler: RequestHandler = async (req, res) => {
   try {
     const { walletAddress } = req.query;
     const { adId } = req.params;
+    // Get the interaction amount from the request body, default to 0.5 if not provided
+    const interactionAmount = parseFloat(req.body.amount) || 0.5;
 
     if (!walletAddress || typeof walletAddress !== 'string') {
       res.status(400).json({ error: 'Invalid wallet address' });
@@ -35,8 +37,12 @@ const trackInteractionHandler: RequestHandler = async (req, res) => {
     }
 
     const ad = adResult.rows[0];
-    if (ad.remaining_balance < 0.5) {
-      res.status(400).json({ error: 'Insufficient ad balance' });
+    
+    // Ensure we never reduce balance below zero
+    const finalAmount = Math.min(interactionAmount, ad.remaining_balance);
+    
+    if (finalAmount <= 0) {
+      res.status(400).json({ error: 'Ad has no remaining balance' });
       return;
     }
 
@@ -47,7 +53,8 @@ const trackInteractionHandler: RequestHandler = async (req, res) => {
     );
 
     if (interactionResult.rows.length > 0) {
-      res.status(400).json({ error: 'You have already interacted with this ad' });
+      // User has already interacted with this ad - don't decrease balance or reward again
+      res.status(200).json({ success: true, message: 'Interaction already recorded', alreadyInteracted: true });
       return;
     }
 
@@ -56,30 +63,30 @@ const trackInteractionHandler: RequestHandler = async (req, res) => {
 
     // Record the interaction
     await client.query(
-      'INSERT INTO ad_interactions (ad_id, wallet_address) VALUES ($1, $2)',
-      [adId, walletAddress]
+      'INSERT INTO ad_interactions (ad_id, wallet_address, amount) VALUES ($1, $2, $3)',
+      [adId, walletAddress, finalAmount]
     );
 
-    // Update ad balance
+    // Update ad balance - only for unique interactions
     await client.query(
-      'UPDATE ads SET remaining_balance = remaining_balance - $1 WHERE id = $2',
-      [0.5, adId]
+      'UPDATE ads SET remaining_balance = remaining_balance - $1, interactions = interactions + 1 WHERE id = $2',
+      [finalAmount, adId]
     );
 
-    // Update user's earned rewards
-    await updateEarnedRewards(walletAddress, 0.5);
+    // Update user's earned rewards - only for unique interactions
+    await updateEarnedRewards(walletAddress, finalAmount);
 
     // Commit transaction
     await client.query('COMMIT');
 
-    res.json({ success: true });
+    res.json({ success: true, amount: finalAmount });
   } catch (error: any) {
     // Rollback transaction on error
     await client.query('ROLLBACK');
     
     // Check if error is due to unique constraint violation
     if (error.code === '23505') { // Unique violation
-      res.status(400).json({ error: 'You have already interacted with this ad' });
+      res.status(200).json({ success: true, message: 'Interaction already recorded', alreadyInteracted: true });
     } else {
       console.error('Error tracking interaction:', error);
       res.status(500).json({ error: 'Internal server error' });

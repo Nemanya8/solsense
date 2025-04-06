@@ -38,6 +38,11 @@ interface DailyStat {
  *                 type: string
  *               body:
  *                 type: string
+ *               content_type:
+ *                 type: string
+ *                 enum: [text, html]
+ *                 default: text
+ *                 description: The type of content - plain text/markdown or HTML
  *               total_balance:
  *                 type: number
  *               desired_profile:
@@ -66,6 +71,7 @@ const createAdHandler: RequestHandler = async (req: AuthRequest, res) => {
       name: req.body.name,
       short_description: req.body.short_description,
       body: req.body.body,
+      content_type: req.body.content_type || 'text',
       total_balance: req.body.total_balance,
       desired_profile: req.body.desired_profile
     };
@@ -358,9 +364,10 @@ const getMatchingAdsHandler: RequestHandler = async (req, res) => {
         userRatings.experienced - 10, userRatings.experienced + 10
       ]);
 
-      // Parse decimal values to numbers
+      // Parse decimal values to numbers and ensure content_type exists
       const ads = result.rows.map((ad: any) => ({
         ...ad,
+        content_type: ad.content_type || 'text', // Default to text if not specified
         total_balance: parseFloat(ad.total_balance),
         remaining_balance: parseFloat(ad.remaining_balance)
       }));

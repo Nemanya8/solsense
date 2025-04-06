@@ -22,6 +22,7 @@ export interface Ad {
   name: string;
   short_description: string;
   body: string;
+  content_type: string;
   total_balance: number;
   remaining_balance: number;
   desired_profile: ProfileRatings;
@@ -36,6 +37,7 @@ export interface CreateAdData {
   name: string;
   short_description: string;
   body: string;
+  content_type: string;
   total_balance: number;
   desired_profile: ProfileRatings;
 }
@@ -65,6 +67,7 @@ export const createAdInteractionsTable = async () => {
         id SERIAL PRIMARY KEY,
         ad_id INTEGER NOT NULL REFERENCES ads(id),
         wallet_address VARCHAR(255) NOT NULL,
+        amount DECIMAL(20, 8) NOT NULL DEFAULT 0.5,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         UNIQUE(ad_id, wallet_address)
       );
@@ -91,6 +94,7 @@ export const createAdsTable = async () => {
         name VARCHAR(255) NOT NULL,
         short_description TEXT NOT NULL,
         body TEXT NOT NULL,
+        content_type VARCHAR(10) NOT NULL DEFAULT 'text',
         total_balance DECIMAL(20, 8) NOT NULL,
         remaining_balance DECIMAL(20, 8) NOT NULL,
         desired_profile JSONB NOT NULL,
@@ -108,23 +112,52 @@ export const createAdsTable = async () => {
 export const createAd = async (data: CreateAdData): Promise<Ad> => {
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `INSERT INTO ads (
-        advertiser_id, name, short_description, body, 
-        total_balance, remaining_balance, desired_profile,
-        impressions, interactions, created_at, updated_at
-      )
-      VALUES ($1, $2, $3, $4, $5, $5, $6, 0, 0, NOW(), NOW())
-      RETURNING *`,
-      [
-        data.advertiser_id,
-        data.name,
-        data.short_description,
-        data.body,
-        data.total_balance,
-        JSON.stringify(data.desired_profile)
-      ]
-    );
+    let result;
+    try {
+      // First try with content_type
+      result = await client.query(
+        `INSERT INTO ads (
+          advertiser_id, name, short_description, body, 
+          content_type, total_balance, remaining_balance, desired_profile,
+          impressions, interactions, created_at, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $6, $7, 0, 0, NOW(), NOW())
+        RETURNING *`,
+        [
+          data.advertiser_id,
+          data.name,
+          data.short_description,
+          data.body,
+          data.content_type,
+          data.total_balance,
+          JSON.stringify(data.desired_profile)
+        ]
+      );
+    } catch (err: any) {
+      // If content_type column doesn't exist yet, try without it
+      if (err.code === '42703' && err.message.includes('column "content_type" of relation "ads" does not exist')) {
+        console.warn('content_type column not found, using fallback query');
+        result = await client.query(
+          `INSERT INTO ads (
+            advertiser_id, name, short_description, body, 
+            total_balance, remaining_balance, desired_profile,
+            impressions, interactions, created_at, updated_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $5, $6, 0, 0, NOW(), NOW())
+          RETURNING *`,
+          [
+            data.advertiser_id,
+            data.name,
+            data.short_description,
+            data.body,
+            data.total_balance,
+            JSON.stringify(data.desired_profile)
+          ]
+        );
+      } else {
+        throw err;
+      }
+    }
     return result.rows[0];
   } catch (error) {
     console.error('Error creating ad:', error);
@@ -137,21 +170,24 @@ export const createAd = async (data: CreateAdData): Promise<Ad> => {
 export const getAdById = async (id: number): Promise<Ad | null> => {
   const client = await pool.connect();
   try {
-    const result = await client.query(
-      `SELECT * FROM ads WHERE id = $1`,
-      [id]
-    );
-    if (!result.rows[0]) return null;
+    const result = await client.query('SELECT * FROM ads WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return null;
+    }
     
-    // Parse decimal values to numbers
+    // Ensure the ad has a content_type property
     const ad = result.rows[0];
+    if (!ad.content_type) {
+      ad.content_type = 'text'; // Default to text if not specified
+    }
+    
     return {
       ...ad,
       total_balance: parseFloat(ad.total_balance),
       remaining_balance: parseFloat(ad.remaining_balance)
     };
   } catch (error) {
-    console.error('Error getting ad:', error);
+    console.error('Error getting ad by ID:', error);
     throw error;
   } finally {
     client.release();
@@ -167,6 +203,7 @@ export const getAdsByAdvertiserId = async (advertiserId: number): Promise<Ad[]> 
     );
     return result.rows.map(ad => ({
       ...ad,
+      content_type: ad.content_type || 'text', // Default to text if not specified
       total_balance: parseFloat(ad.total_balance),
       remaining_balance: parseFloat(ad.remaining_balance)
     }));
@@ -202,13 +239,36 @@ export const updateAdStats = async (id: number, impressions: number, interaction
 export const updateAdRemainingBalance = async (id: number, amount: number): Promise<Ad> => {
   const client = await pool.connect();
   try {
+    // First, get the current balance
+    const currentBalanceResult = await client.query(
+      `SELECT remaining_balance FROM ads WHERE id = $1`,
+      [id]
+    );
+    
+    if (currentBalanceResult.rows.length === 0) {
+      throw new Error(`Ad with id ${id} not found`);
+    }
+    
+    const currentBalance = parseFloat(currentBalanceResult.rows[0].remaining_balance);
+    // Calculate the deduction amount, ensuring we never go below zero
+    const deductionAmount = Math.min(amount, currentBalance);
+    
+    // Only update if there's something to deduct
+    if (deductionAmount <= 0) {
+      const adResult = await client.query(
+        `SELECT * FROM ads WHERE id = $1`,
+        [id]
+      );
+      return adResult.rows[0];
+    }
+    
     const result = await client.query(
       `UPDATE ads 
-       SET remaining_balance = remaining_balance - $1,
+       SET remaining_balance = GREATEST(0, remaining_balance - $1),
            updated_at = NOW()
-       WHERE id = $2 AND remaining_balance >= $1
+       WHERE id = $2
        RETURNING *`,
-      [amount, id]
+      [deductionAmount, id]
     );
     return result.rows[0];
   } catch (error) {

@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react"
 import { useWallet } from "@solana/wallet-adapter-react"
 import ReactMarkdown from "react-markdown"
-import { Eye, Info, User } from "lucide-react"
+import { Eye, Info, User, Code } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -40,15 +40,40 @@ export default function MatchingAdsPage() {
   const trackInteraction = async (adId: number) => {
     if (!publicKey) return
 
+    // Get the ad that was interacted with
+    const ad = ads.find(ad => ad.id === adId)
+    if (!ad) return
+
+    // Default interaction amount is 0.5 USDC, but can be configured based on ad settings
+    const interactionAmount = 0.5
+
     try {
-      await communityService.trackInteraction(adId, publicKey.toString())
-      setAds((prevAds) => prevAds.map((ad) => (ad.id === adId ? { ...ad, interactions: ad.interactions + 1 } : ad)))
+      const response = await communityService.trackInteraction(adId, publicKey.toString(), interactionAmount)
       
-      if (portfolio) {
-        setPortfolio(prev => prev ? {
-          ...prev,
-          earned_rewards: (prev.earned_rewards || 0) + 0.5
-        } : null)
+      // Only update the UI if this was a new unique interaction
+      if (!response.alreadyInteracted) {
+        // Calculate the actual amount (ensures we don't go below zero)
+        const actualAmount = Math.min(interactionAmount, ad.remaining_balance)
+        
+        // Update the ads local state to reflect the interaction and decreased balance
+        setAds((prevAds) => prevAds.map((ad) => {
+          if (ad.id === adId) {
+            return { 
+              ...ad, 
+              interactions: ad.interactions + 1,
+              remaining_balance: Math.max(0, ad.remaining_balance - actualAmount)
+            }
+          }
+          return ad
+        }))
+        
+        // Update the portfolio's earned rewards
+        if (portfolio) {
+          setPortfolio(prev => prev ? {
+            ...prev,
+            earned_rewards: (prev.earned_rewards || 0) + actualAmount
+          } : null)
+        }
       }
     } catch (error) {
       console.error("Error tracking interaction:", error)
@@ -145,6 +170,13 @@ export default function MatchingAdsPage() {
 }
 
 function AdCard({ ad, onInteraction }: { ad: Ad; onInteraction: () => void }) {
+  // Function to safely render HTML - in a real implementation, sanitize with DOMPurify
+  const sanitizeHtml = (html: string) => {
+    // In production, you should sanitize HTML to prevent XSS attacks
+    // For example: return DOMPurify.sanitize(html)
+    return html
+  }
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-3">
@@ -158,6 +190,12 @@ function AdCard({ ad, onInteraction }: { ad: Ad; onInteraction: () => void }) {
           <div className="flex items-center text-sm text-muted-foreground">
             <User className="h-3 w-3 mr-1" />
             <span>{ad.advertiser_name}</span>
+            {ad.content_type === "html" && (
+              <div className="flex items-center ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                <Code className="h-3 w-3 mr-1" />
+                HTML
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">
@@ -172,8 +210,17 @@ function AdCard({ ad, onInteraction }: { ad: Ad; onInteraction: () => void }) {
         <Dialog>
           <DialogTrigger asChild>
             <div className="cursor-pointer" onClick={onInteraction}>
-              <div className="prose prose-sm dark:prose-invert max-h-[200px] overflow-hidden relative">
-                <ReactMarkdown>{ad.body}</ReactMarkdown>
+              <div className="max-h-[200px] overflow-hidden relative">
+                {ad.content_type === "html" ? (
+                  <div 
+                    className="prose prose-sm dark:prose-invert email-content"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(ad.body) }}
+                  />
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert">
+                    <ReactMarkdown>{ad.body}</ReactMarkdown>
+                  </div>
+                )}
                 <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent" />
               </div>
               <Button variant="ghost" className="w-full mt-2 text-primary">
@@ -187,8 +234,17 @@ function AdCard({ ad, onInteraction }: { ad: Ad; onInteraction: () => void }) {
               <DialogTitle>{ad.name}</DialogTitle>
             </DialogHeader>
 
-            <div className="prose prose-sm dark:prose-invert max-w-none">
-              <ReactMarkdown>{ad.body}</ReactMarkdown>
+            <div className="max-w-none">
+              {ad.content_type === "html" ? (
+                <div 
+                  className="prose prose-sm dark:prose-invert email-content w-full"
+                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(ad.body) }}
+                />
+              ) : (
+                <div className="prose prose-sm dark:prose-invert">
+                  <ReactMarkdown>{ad.body}</ReactMarkdown>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 flex justify-between items-center">

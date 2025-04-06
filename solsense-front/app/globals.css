@@ -107,6 +107,49 @@
   }
 }
 
+/* Styles for HTML email content */
+.email-content {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.email-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.email-content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.email-content td, 
+.email-content th {
+  padding: 8px;
+}
+
+/* Allow some common inline styles that might be used in emails */
+.email-content [style*="color"],
+.email-content [style*="background"],
+.email-content [style*="font-size"],
+.email-content [style*="font-family"],
+.email-content [style*="text-align"],
+.email-content [style*="margin"],
+.email-content [style*="padding"] {
+  max-width: 100% !important;
+}
+
+/* Make sure links are visible */
+.email-content a {
+  color: hsl(var(--primary));
+  text-decoration: underline;
+}
+
+.dark .email-content a {
+  color: hsl(217.2 91.2% 59.8%);
+}
+
 :root {
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);

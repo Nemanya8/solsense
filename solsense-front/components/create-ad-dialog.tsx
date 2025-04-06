@@ -42,10 +42,13 @@ export function CreateAdDialog() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
   const [currentStep, setCurrentStep] = useState("details")
+  const [contentType, setContentType] = useState<"text" | "html">("text")
+  const [previewVisible, setPreviewVisible] = useState(false)
   const [adData, setAdData] = useState<{
     name: string;
     short_description: string;
     body: string;
+    content_type: "text" | "html";
     total_balance: number;
     desired_profile: ProfileRatings;
   } | null>(null)
@@ -70,6 +73,7 @@ export function CreateAdDialog() {
       name,
       short_description: shortDescription,
       body,
+      content_type: contentType,
       total_balance: totalBalance,
       desired_profile: {
         whale: 0,
@@ -263,8 +267,71 @@ export function CreateAdDialog() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="body">Ad Content (Markdown)</Label>
-                <Textarea id="body" name="body" required className="min-h-[200px]" />
+                <div className="flex justify-between items-center mb-2">
+                  <Label htmlFor="body">Ad Content</Label>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      type="button" 
+                      variant={contentType === "text" ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setContentType("text")}
+                    >
+                      Plain Text
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant={contentType === "html" ? "default" : "outline"} 
+                      size="sm"
+                      onClick={() => setContentType("html")}
+                    >
+                      HTML
+                    </Button>
+                  </div>
+                </div>
+                <Textarea 
+                  id="body" 
+                  name="body" 
+                  required 
+                  className="min-h-[200px] font-mono" 
+                  placeholder={contentType === "html" ? 
+                    "<div style='color: blue;'>Your HTML content here. You can use styling similar to emails.</div>" : 
+                    "Your plain text content here. Use markdown for basic formatting."
+                  }
+                  onChange={(e) => {
+                    if (contentType === "html") {
+                      setAdData(prev => prev ? {
+                        ...prev,
+                        body: e.target.value
+                      } : null);
+                    }
+                  }}
+                />
+                {contentType === "html" && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      You can use HTML tags and CSS styling for a rich email-like experience.
+                    </p>
+                    <div className="flex justify-end">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setPreviewVisible(!previewVisible)}
+                      >
+                        {previewVisible ? "Hide Preview" : "Show Preview"}
+                      </Button>
+                    </div>
+                    {previewVisible && adData?.body && (
+                      <div className="mt-4 border rounded-md p-4">
+                        <p className="text-sm font-medium mb-2">Preview:</p>
+                        <div 
+                          className="prose prose-sm dark:prose-invert max-h-[300px] overflow-auto"
+                          dangerouslySetInnerHTML={{ __html: adData.body }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
