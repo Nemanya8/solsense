@@ -14,7 +14,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Plus, ArrowRight, ArrowLeft } from "lucide-react"
-import axios from "axios"
 import { useRouter } from "next/navigation"
 import { useWallet } from "@solana/wallet-adapter-react"
 import { PublicKey, Transaction, Connection } from "@solana/web3.js"
@@ -27,6 +26,7 @@ import {
 } from "@solana/spl-token"
 import { CustomWalletButton } from "./wallet/wallet-button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import api from "@/lib/axios"
 
 interface ProfileRatings {
   whale: number;
@@ -205,13 +205,7 @@ export function CreateAdDialog() {
         }
 
         // Create ad after successful payment
-        const response = await axios.post(
-          "http://localhost:4000/api/ads",
-          adData,
-          {
-            withCredentials: true,
-          }
-        )
+        const response = await api.post("/ads", adData)
 
         if (response.data) {
           setOpen(false)

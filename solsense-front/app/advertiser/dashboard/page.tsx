@@ -1,46 +1,48 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useRouter } from "next/navigation"
-import axios from "axios"
+import api from "@/lib/axios"
+import { useAuth } from "../auth-provider"
 
 interface Advertiser {
-  id: number;
-  email: string;
-  name: string;
-  description: string;
-  ads: string[];
-  created_at: string;
+  id: string | number
+  name: string
+  email: string
+  description: string
+  ads?: string[]
+  created_at?: string
 }
 
-export default function AdvertiserDashboard() {
+export default function Dashboard() {
   const [advertiser, setAdvertiser] = useState<Advertiser | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const router = useRouter()
+  const [error, setError] = useState<string | null>(null)
+  const { advertiser: authAdvertiser } = useAuth()
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await axios.get("http://localhost:4000/api/advertiser/profile", {
-          withCredentials: true
-        })
-        setAdvertiser(response.data)
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-          router.push("/")
-        } else {
-          setError("Failed to load profile")
-        }
-      } finally {
-        setLoading(false)
-      }
+    if (authAdvertiser) {
+      setAdvertiser(authAdvertiser as Advertiser)
+      setLoading(false)
+    } else {
+      fetchProfile()
     }
+  }, [authAdvertiser])
 
-    fetchProfile()
-  }, [router])
+  const fetchProfile = async () => {
+    try {
+      setLoading(true)
+      const response = await api.get("/advertiser/me")
+      if (response.data) {
+        setAdvertiser(response.data)
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+      setError("Failed to load profile")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -89,7 +91,7 @@ export default function AdvertiserDashboard() {
             </div>
             <div>
               <h3 className="font-semibold">Member Since</h3>
-              <p>{new Date(advertiser.created_at).toLocaleDateString()}</p>
+              <p>{new Date(advertiser.created_at || "").toLocaleDateString()}</p>
             </div>
           </CardContent>
         </Card>

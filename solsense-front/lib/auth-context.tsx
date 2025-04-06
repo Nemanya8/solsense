@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
+import api from './axios'
+import { getToken, removeToken, getUser, setUser as saveUser, removeUser } from './token-service'
 
 interface Advertiser {
   id: number
@@ -26,34 +28,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if user data exists in localStorage
-    const storedUser = localStorage.getItem('user')
-    if (storedUser) {
+    const loadUserData = async () => {
       try {
-        setUser(JSON.parse(storedUser))
+        // Check if token exists in localStorage
+        const token = getToken();
+        const savedUser = getUser();
+        
+        if (savedUser) {
+          setUser(savedUser);
+          setIsLoading(false);
+          return;
+        }
+        
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        // Validate token with backend
+        const response = await api.get('/advertiser/me');
+        if (response.data) {
+          setUser(response.data);
+          saveUser(response.data);
+        }
       } catch (error) {
-        console.error('Error parsing stored user:', error)
-        localStorage.removeItem('user')
+        console.error('Error validating token:', error);
+        // If token validation fails, clear token
+        removeToken();
+        removeUser();
+      } finally {
+        setIsLoading(false);
       }
     }
-    setIsLoading(false)
-  }, [])
 
-  // Update localStorage whenever user changes
+    loadUserData();
+  }, []);
+
+  // Update user in localStorage when it changes
   useEffect(() => {
     if (user) {
-      localStorage.setItem('user', JSON.stringify(user))
-    } else {
-      localStorage.removeItem('user')
+      saveUser(user);
     }
-  }, [user])
+  }, [user]);
 
   const logout = async () => {
     try {
-      setUser(null)
-      router.push('/')
+      // Clear token and user data
+      removeToken();
+      removeUser();
+      setUser(null);
+      router.push('/');
     } catch (error) {
-      console.error('Error during logout:', error)
+      console.error('Error during logout:', error);
     }
   }
 

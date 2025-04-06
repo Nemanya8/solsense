@@ -3,6 +3,7 @@ import { createAd, getAdById, getAdsByAdvertiserId, updateAdStats, updateAdRemai
 import { CreateAdData } from '../models/ad';
 import { getPortfolioData } from '../models/portfolio';
 import { pool } from '../db';
+import { authenticateJWT, AuthRequest } from '../middleware/auth';
 
 const router: Router = express.Router();
 
@@ -53,15 +54,15 @@ interface DailyStat {
  *                   experienced:
  *                     type: number
  */
-const createAdHandler: RequestHandler = async (req, res) => {
+const createAdHandler: RequestHandler = async (req: AuthRequest, res) => {
   try {
-    if (!req.session.advertiserId) {
+    if (!req.advertiserId) {
       res.status(401).json({ error: 'Not authenticated' });
       return;
     }
 
     const adData: CreateAdData = {
-      advertiser_id: req.session.advertiserId,
+      advertiser_id: req.advertiserId,
       name: req.body.name,
       short_description: req.body.short_description,
       body: req.body.body,
@@ -89,14 +90,14 @@ const createAdHandler: RequestHandler = async (req, res) => {
  *       401:
  *         description: Not authenticated
  */
-const getAdsHandler: RequestHandler = async (req, res) => {
+const getAdsHandler: RequestHandler = async (req: AuthRequest, res) => {
   try {
-    if (!req.session.advertiserId) {
+    if (!req.advertiserId) {
       res.status(401).json({ error: 'Not authenticated' });
       return;
     }
 
-    const ads = await getAdsByAdvertiserId(req.session.advertiserId);
+    const ads = await getAdsByAdvertiserId(req.advertiserId);
     res.json(ads);
   } catch (error) {
     console.error('Get ads error:', error);
@@ -118,10 +119,10 @@ const getAdsHandler: RequestHandler = async (req, res) => {
  *       500:
  *         description: Server error
  */
-const getAnalyticsHandler: RequestHandler = async (req, res) => {
+const getAnalyticsHandler: RequestHandler = async (req: AuthRequest, res) => {
   let client;
   try {
-    if (!req.session.advertiserId) {
+    if (!req.advertiserId) {
       res.status(401).json({ error: 'Not authenticated' });
       return;
     }
@@ -143,11 +144,11 @@ const getAnalyticsHandler: RequestHandler = async (req, res) => {
     // Verify advertiser exists
     const advertiser = await client.query(
       'SELECT id FROM advertisers WHERE id = $1',
-      [req.session.advertiserId]
+      [req.advertiserId]
     );
 
     if (advertiser.rows.length === 0) {
-      console.log(`Advertiser with ID ${req.session.advertiserId} not found, returning empty response`);
+      console.log(`Advertiser with ID ${req.advertiserId} not found, returning empty response`);
       const emptyResponse = {
         totalStats: {
           total_impressions: 0,
@@ -169,7 +170,7 @@ const getAnalyticsHandler: RequestHandler = async (req, res) => {
       return;
     }
 
-    console.log(`Found advertiser with ID ${req.session.advertiserId}`);
+    console.log(`Found advertiser with ID ${req.advertiserId}`);
 
     // Get total impressions and interactions
     const totalStats = await client.query(`
@@ -180,7 +181,7 @@ const getAnalyticsHandler: RequestHandler = async (req, res) => {
         COALESCE(SUM(total_balance), 0) as total_balance
       FROM ads
       WHERE advertiser_id = $1
-    `, [req.session.advertiserId]);
+    `, [req.advertiserId]);
     console.log('Total stats query result:', totalStats.rows[0]);
 
     // Initialize empty daily stats
@@ -221,7 +222,7 @@ const getAnalyticsHandler: RequestHandler = async (req, res) => {
           LEFT JOIN daily_impressions di ON d.date = di.date
           LEFT JOIN daily_interactions din ON d.date = din.date
           ORDER BY d.date
-        `, [req.session.advertiserId]);
+        `, [req.advertiserId]);
       } catch (error) {
         console.error('Error fetching daily stats:', error);
       }
@@ -244,7 +245,7 @@ const getAnalyticsHandler: RequestHandler = async (req, res) => {
       WHERE advertiser_id = $1
       ORDER BY impressions DESC
       LIMIT 5
-    `, [req.session.advertiserId]);
+    `, [req.advertiserId]);
 
     // Get user profile distribution
     const profileDistribution = await client.query(`
@@ -256,7 +257,7 @@ const getAnalyticsHandler: RequestHandler = async (req, res) => {
         COALESCE(AVG((desired_profile->>'experienced')::numeric), 0) as avg_experienced
       FROM ads
       WHERE advertiser_id = $1
-    `, [req.session.advertiserId]);
+    `, [req.advertiserId]);
 
     const response = {
       totalStats: {
@@ -645,15 +646,15 @@ const trackInteractionHandler: RequestHandler = async (req, res) => {
 };
 
 // Define routes in correct order (specific routes before parameterized routes)
-router.post('/', createAdHandler);
-router.get('/', getAdsHandler);
-router.get('/analytics', getAnalyticsHandler);
+router.post('/', authenticateJWT, createAdHandler);
+router.get('/', authenticateJWT, getAdsHandler);
+router.get('/analytics', authenticateJWT, getAnalyticsHandler);
 router.get('/matching', getMatchingAdsHandler);
 
 // Parameterized routes should come after specific routes
 router.get('/:id', getAdHandler);
-router.post('/:id/stats', updateStatsHandler);
-router.post('/:id/balance', updateBalanceHandler);
+router.post('/:id/stats', authenticateJWT, updateStatsHandler);
+router.post('/:id/balance', authenticateJWT, updateBalanceHandler);
 router.post('/:id/impression', trackImpressionHandler);
 router.post('/:id/interaction', trackInteractionHandler);
 

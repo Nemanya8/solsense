@@ -2,7 +2,6 @@ import dotenv from 'dotenv';
 import express, { Express, Request, Response, NextFunction } from 'express';
 import swaggerUi from 'swagger-ui-express';
 import cors from 'cors';
-import session from 'express-session';
 import db from './config/db';
 import portfolioRoutes from './routes/portfolio';
 import advertiserRoutes from './routes/advertiser';
@@ -11,37 +10,18 @@ import { createPortfolioTable } from './models/portfolio';
 import { createAdvertiserTable } from './models/advertiser';
 import { createAdsTable, createAdImpressionsTable, createAdInteractionsTable } from './models/ad';
 import { swaggerSpec } from './config/swagger';
-import { MemoryStore } from 'express-session';
 
 dotenv.config();
 
 const app: Express = express();
 const PORT: number = parseInt(process.env.PORT || '4000', 10);
 
-// CORS configuration - must be before session middleware
+// CORS configuration
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// Session configuration
-app.use(session({
-  name: 'solsense.sid',
-  secret: process.env.SESSION_SECRET || 'your-secret-key',
-  resave: false,
-  saveUninitialized: false,
-  proxy: true,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: 'lax',
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    path: '/'
-  },
-  rolling: true,
-  store: new MemoryStore()
 }));
 
 app.use(express.json());

@@ -13,16 +13,15 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import api from '@/lib/axios'
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth-context"
+import { useAuth } from "@/app/advertiser/auth-provider"
 
 export function AdvertiserAuthDialog() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-  const { setUser } = useAuth()
+  const { login, register } = useAuth()
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -34,16 +33,9 @@ export function AdvertiserAuthDialog() {
     const password = formData.get("password") as string
 
     try {
-      const response = await api.post("/advertiser/login", {
-        email,
-        password,
-      });
-
-      if (response.data) {
-        setUser(response.data)
-        setOpen(false)
-        router.push("/advertiser/dashboard")
-      }
+      await login(email, password)
+      setOpen(false)
+      router.push("/advertiser/dashboard")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Login error:', error);
@@ -65,26 +57,9 @@ export function AdvertiserAuthDialog() {
     const description = formData.get("description") as string
 
     try {
-      const response = await api.post("/advertiser/register", {
-        email,
-        password,
-        name,
-        description,
-      });
-
-      if (response.data) {
-        // After successful registration, automatically log in
-        const loginResponse = await api.post("/advertiser/login", {
-          email,
-          password,
-        });
-
-        if (loginResponse.data) {
-          setUser(loginResponse.data)
-          setOpen(false)
-          router.push("/advertiser/dashboard")
-        }
-      }
+      await register(email, password, name, description)
+      setOpen(false)
+      router.push("/advertiser/dashboard")
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       console.error('Registration error:', error);

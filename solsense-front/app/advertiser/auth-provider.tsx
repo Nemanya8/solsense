@@ -1,6 +1,8 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { getToken, setToken, removeToken, getUser, setUser as saveUser, removeUser } from '@/lib/token-service'
+import api from '@/lib/axios'
 
 interface Advertiser {
   id: string
@@ -24,118 +26,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Check for existing session
-    const checkSession = async () => {
+    // Check for existing token and user data in local storage
+    const token = getToken();
+    const savedUser = getUser();
+    
+    if (savedUser) {
+      setAdvertiser(savedUser);
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate token with the backend
+    const checkToken = async () => {
       try {
-        const response = await fetch("http://localhost:4000/api/advertiser/me", {
-          credentials: "include",
-        })
-        if (response.ok) {
-          const data = await response.json()
-          setAdvertiser(data)
-        } else if (response.status === 401) {
-          // Clear advertiser state if unauthorized
-          setAdvertiser(null)
-        } else {
-          // Retry once on other errors
-          const retryResponse = await fetch("http://localhost:4000/api/advertiser/me", {
-            credentials: "include",
-          })
-          if (retryResponse.ok) {
-            const data = await retryResponse.json()
-            setAdvertiser(data)
-          } else {
-            setAdvertiser(null)
-          }
+        const response = await api.get('/advertiser/me');
+        if (response.data) {
+          setAdvertiser(response.data);
+          saveUser(response.data);
         }
       } catch (error) {
-        console.error("Error checking session:", error)
-        // Retry once on network errors
-        try {
-          const retryResponse = await fetch("http://localhost:4000/api/advertiser/me", {
-            credentials: "include",
-          })
-          if (retryResponse.ok) {
-            const data = await retryResponse.json()
-            setAdvertiser(data)
-          } else {
-            setAdvertiser(null)
-          }
-        } catch (retryError) {
-          console.error("Error retrying session check:", retryError)
-          setAdvertiser(null)
-        }
+        console.error("Error checking token:", error);
+        // Token is invalid, remove it
+        removeToken();
+        removeUser();
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    checkSession()
-  }, [])
+    checkToken();
+  }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch("http://localhost:4000/api/advertiser/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password }),
-      })
+      const response = await api.post("/advertiser/login", {
+        email,
+        password,
+      });
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || "Login failed")
+      if (response.data) {
+        // Save token and user data
+        const { token, ...advertiserData } = response.data;
+        setToken(token);
+        saveUser(advertiserData);
+        setAdvertiser(advertiserData);
       }
-
-      const data = await response.json()
-      setAdvertiser(data)
     } catch (error) {
-      console.error("Login error:", error)
-      throw error
+      console.error("Login error:", error);
+      throw error;
     }
   }
 
   const register = async (email: string, password: string, name: string, description: string) => {
     try {
-      const response = await fetch("http://localhost:4000/api/advertiser/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ email, password, name, description }),
-      })
+      await api.post("/advertiser/register", {
+        email,
+        password,
+        name,
+        description,
+      });
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || "Registration failed")
-      }
-
-      const data = await response.json()
-      setAdvertiser(data)
+      // If registration is successful, login automatically
+      await login(email, password);
     } catch (error) {
-      console.error("Registration error:", error)
-      throw error
+      console.error("Registration error:", error);
+      throw error;
     }
   }
 
   const logout = async () => {
-    try {
-      await fetch("http://localhost:4000/api/advertiser/logout", {
-        method: "POST",
-        credentials: "include",
-      })
-      setAdvertiser(null)
-    } catch (error) {
-      console.error("Logout error:", error)
-      // Even if logout fails, clear the local state
-      setAdvertiser(null)
-    }
+    // Clear token and user data
+    removeToken();
+    removeUser();
+    setAdvertiser(null);
   }
 
-  // Show loading state while checking session
+  // Show loading state while checking token
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">

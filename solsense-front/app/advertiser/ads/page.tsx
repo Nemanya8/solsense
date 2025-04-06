@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
-import axios from "axios"
 import { CreateAdDialog } from "@/components/create-ad-dialog"
 import { Progress } from "@/components/ui/progress"
 import ReactMarkdown from 'react-markdown'
+import api from "@/lib/axios"
+import { useAuth } from "../auth-provider"
 
 interface ProfileRatings {
   whale: number;
@@ -34,28 +35,29 @@ export default function AdvertiserAds() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const router = useRouter()
+  const { advertiser } = useAuth()
 
   useEffect(() => {
+    // Redirect if not logged in
+    if (!advertiser && !loading) {
+      router.push('/')
+      return
+    }
+
     const fetchAds = async () => {
       try {
-        const response = await axios.get("http://localhost:4000/api/ads", {
-          withCredentials: true
-        })
+        const response = await api.get("/ads")
         setAds(response.data)
-      //eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
-        if (error.response?.status === 401) {
-          router.push("/")
-        } else {
-          setError("Failed to load ads")
-        }
+      } catch (error) {
+        console.error("Error fetching ads:", error)
+        setError("Failed to load ads")
       } finally {
         setLoading(false)
       }
     }
 
     fetchAds()
-  }, [router])
+  }, [router, advertiser, loading])
 
   if (loading) {
     return (

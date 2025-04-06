@@ -75,21 +75,15 @@ export default function AnalyticsPage() {
       try {
         setLoading(true)
         setError("")
-        const response = await api.get('/ads/analytics', {
-          withCredentials: true
-        })
+        const response = await api.get('/ads/analytics')
         setData(response.data)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
         console.error('Error fetching analytics:', error)
-        if (error.response?.status === 401) {
-          router.push('/advertiser')
-        } else {
-          setError(error.response?.data?.error || 
-            error.message || 
-            "Failed to load analytics data. Please try again later."
-          )
-        }
+        setError(error.response?.data?.error || 
+          error.message || 
+          "Failed to load analytics data. Please try again later."
+        )
       } finally {
         setLoading(false)
       }
