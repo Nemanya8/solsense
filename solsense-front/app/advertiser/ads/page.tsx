@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, HTMLProps } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRouter } from "next/navigation"
 import { CreateAdDialog } from "@/components/create-ad-dialog"
@@ -8,6 +8,8 @@ import { Progress } from "@/components/ui/progress"
 import ReactMarkdown from 'react-markdown'
 import api from "@/lib/axios"
 import { useAuth } from "../auth-provider"
+import remarkGfm from 'remark-gfm'
+import rehypeRaw from 'rehype-raw'
 
 interface ProfileRatings {
   whale: number;
@@ -15,6 +17,10 @@ interface ProfileRatings {
   flipper: number;
   defi_user: number;
   experienced: number;
+}
+
+interface HTMLPropsWithBgColor extends HTMLProps<HTMLDivElement> {
+  bgcolor?: string;
 }
 
 interface Ad {
@@ -40,7 +46,7 @@ export default function AdvertiserAds() {
   useEffect(() => {
     // Redirect if not logged in
     if (!advertiser && !loading) {
-      router.push('/')
+      router.push('/advertiser/login')
       return
     }
 
@@ -56,7 +62,9 @@ export default function AdvertiserAds() {
       }
     }
 
-    fetchAds()
+    if (advertiser) {
+      fetchAds()
+    }
   }, [router, advertiser, loading])
 
   if (loading) {
@@ -133,7 +141,29 @@ export default function AdvertiserAds() {
                     <div>
                       <h4 className="font-semibold mb-2">Ad Content</h4>
                       <div className="prose prose-sm max-w-none dark:prose-invert">
-                        <ReactMarkdown>{ad.body}</ReactMarkdown>
+                        <ReactMarkdown 
+                          components={{
+                            // Override default paragraph to preserve HTML formatting
+                            p: ({ children, ...props }) => <div className="whitespace-pre-wrap" {...props}>{children}</div>,
+                            // Handle table elements with proper styling
+                            table: ({children, ...props}) => <table className="min-w-full divide-y divide-gray-200" {...props}>{children}</table>,
+                            td: ({children, ...props}) => <td className="px-3 py-2" {...props}>{children}</td>,
+                            th: ({children, ...props}) => <th className="px-3 py-2 font-semibold" {...props}>{children}</th>,
+                            // Handle any HTML attributes by passing them through
+                            div: ({children, ...props}: HTMLPropsWithBgColor) => {
+                              // Convert bgColor to style.backgroundColor if present
+                              if (props.bgcolor) {
+                                props.style = { ...props.style, backgroundColor: props.bgcolor }
+                                delete props.bgcolor
+                              }
+                              return <div {...props}>{children}</div>
+                            }
+                          }}
+                          remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw]}
+                        >
+                          {ad.body}
+                        </ReactMarkdown>
                       </div>
                     </div>
                   </div>

@@ -28,12 +28,12 @@ export function Sidebar() {
         )}
       >
         <div className="flex h-full flex-col">
-          <div className="flex h-14 items-center border-b px-4">
-            <Button variant="ghost" size="icon" className="lg:hidden" onClick={toggle}>
+          <div className="flex h-14 items-center justify-center border-b px-4">
+            <Button variant="ghost" size="icon" className="absolute left-4 lg:hidden" onClick={toggle}>
               <Menu className="h-6 w-6" />
             </Button>
-            <Link href="/" className="flex items-center gap-2 font-semibold">
-              <span className="text-xl">SolSense</span>
+            <Link href="/" className="flex items-center gap-2 font-bold">
+              <span className="text-2xl font-orbitron bg-gradient-to-r from-[#14F195] to-[#9945FF] bg-clip-text text-transparent">SolSense</span>
             </Link>
           </div>
 
